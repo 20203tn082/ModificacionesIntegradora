@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "953958651230",
+    "project_id": "siriaci-9f570",
+    "storage_bucket": "siriaci-9f570.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:953958651230:android:a5083859509b9dc6812bcf",
+        "android_client_info": {
+          "package_name": "mx.edu.utez.siriaci_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "953958651230-m8fvis70jnpashht6ruobea4huf2vuh6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCgYUGT2ejbiIzl1p3Js6TtnSpZgk9vo4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "953958651230-m8fvis70jnpashht6ruobea4huf2vuh6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
