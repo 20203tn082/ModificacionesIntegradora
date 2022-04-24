@@ -8,60 +8,54 @@ import { useNavigation } from '@react-navigation/native';
 import Loading from '../../utiles/Loading';
 import CerrarSesion from '../../peticiones/usuario/CerrarSesion';
 import Tema from '../../utiles/componentes/Temas';
+import Alerts from '../../utiles/componentes/Alert';
 
 
 export default function PerfilUsuario(props) {
+
+  //Constantes globales
   const navigation = useNavigation()
   const { setUpdate } = props.route.params
   const [usuario, setUsuario] = useState({})
   const [loading, setLoading] = useState(false)
+
+
+  //Se ejecuta cada que exista un focus 
   useFocusEffect(
     useCallback(
       () => {
         setUsuario({})
-        getPerfil().then((response) => { })
+        getPerfil()
       },
       [],
     )
   )
 
+
+  //Método para obtener perfil
   const getPerfil = async () => {
     setLoading(true)
     const response = await UsuarioPeticion.perfil()
-    if (response) {
+    if (response) { //Sin error de conexión
       setLoading(false)
-      if (response.authorization) {
-        if (!response.error) {
+      if (response.authorization) { //Con autorización 
+        if (!response.error) { //Sin error de servidor
           setUsuario(response.datos)
-          guardar(response.datos)
-        } else {
-          Alert.alert('Error de servidor', 'intentalo mas tarde',
-            [
-              {
-                text: "Aceptar",
-                onPress: () => {
-                },
-              },
-            ]);
-
+          // guardar(response.datos)
+        } else { //Con error de servidor
+          Alerts.alertServidor()
         }
-      } else {
+      } else {//Sin autorización
         alertAuto()
       }
-    } else {
+    } else { //Con error de conexión
       setLoading(false)
-      Alert.alert("Advertencia", `Error de conexión`,
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-
-            },
-          },
-        ]);
+      Alerts.alertConexion()
     }
 
   }
+
+  //Método que arroja alert de error de autorización
   const alertAuto = () => {
     Alert.alert('Sesión caducada', 'La sesión ha caducado, vuelve a iniciar sesión.',
       [
@@ -74,42 +68,26 @@ export default function PerfilUsuario(props) {
       ]);
   }
 
-  const guardar = (value) => {
-    try {
-      AsyncStorage.setItem("usuario", JSON.stringify(value))
-    } catch (e) {
+  // const guardar = (value) => {
+  //   try {
+  //     AsyncStorage.setItem("usuario", JSON.stringify(value))
+  //   } catch (e) {
       
-    }
-  }
+  //   }
+  // }
 
   //Metodo para cerrar sesion general
   const cerrarSesion = async () => {
     const response = await CerrarSesion.desuscribirse()
-    if (response) {
-      if (!response.error) {
+    if (response) { //Sin error de conexión
+      if (!response.error) { //Sin error de servidor
         await CerrarSesion.cerrarSesion()
         setUpdate(true)
-      } else {
-        Alert.alert("Error", `${response.mensajeGeneral}`,
-          [
-            {
-              text: "Aceptar",
-              onPress: async () => {
-
-              },
-            },
-          ]);
+      } else { //Con error de servidor 
+        Alerts.alertServidor()
       }
     } else {
-      Alert.alert("Advertencia", `Error de conexión`,
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-
-            },
-          },
-        ]);
+      Alerts.alertConexion()
     }
 
   }

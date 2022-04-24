@@ -8,9 +8,12 @@ import { useRef } from 'react'
 import CambiarContrasena from './CambiarContrasena'
 import Loading from '../../utiles/Loading'
 import Tema from '../../utiles/componentes/Temas'
+import Alerts from '../../utiles/componentes/Alert'
 
 const screenWidth = Dimensions.get("window").width
 export default function ValidarCodigo(props) {
+
+    //Constantes globales
     const { setUpdateVista, setOpcion, setUpdateValidacion, setOpc, correo } = props
     const toastRefe = useRef()
     const [vista, setVista] = useState(false)
@@ -20,56 +23,52 @@ export default function ValidarCodigo(props) {
     const [objeto, setObjeto] = useState({ correo: correo, codigo: "", contrasena: null })
     const [error, setError] = useState({ correo: "", codigo: "" })
     const [loading, setLoading] = useState(false)
+
+    //Método para regresar a la pantalla de recuperar contraseña
     const regresar = () => {
         setOpc("Restablecer")
         setUpdateValidacion(true)
     }
+    //Método para el llenado del formulario
     const change = (event, type) => {
         setObjeto({ ...objeto, [type]: event.nativeEvent.text.trim() });
     };
 
+    //Método para validar y canjear el código
     const validar = async () => {
 
-        if (isEmpty(objeto.codigo)) {
+        if (isEmpty(objeto.codigo)) { //Si el campo código se encuentra vacio se hacen las siguientes validaciones
             toastRefe.current.show("Errores de formulario", 3000)
             if (isEmpty(objeto.codigo)) {
                 setError((error) => ({ ...error, codigo: "Campo obligatorio" }))
             } else {
                 setError((error) => ({ ...error, codigo: "" }))
             }
-        } else {
+        } else { // Si no se encuentra vacio el campo código
             setError((error) => ({ ...error, codigo: "" }))
             setLoading(true)
             const response = await Restablecimiento.validarYRestablecer(objeto)
-            if (response) {
+            if (response) { //Sin error de conexión
                 setLoading(false)
-                if (!response.error) {
+                if (!response.error) { //Sin error de servidor 
                     toastRefe.current.show(response.mensajeGeneral, 3000)
                     setOpcionValidar("Cambiar")
                     setDatos(objeto)
                     setObjeto({ correo: correo, codigo: "", contrasena: null })
                     setVista(true)
-                } else {
+                } else { //Con error de servidor 
                     toastRefe.current.show(response.mensajeGeneral, 3000)
                 }
-            } else {
+            } else { //Con error de conexión
                 setLoading(false)
-                Alert.alert("Advertencia", `Error de conexión`,
-                    [
-                        {
-                            text: "Aceptar",
-                            onPress: async () => {
-
-                            },
-                        },
-                    ]);
+                Alerts.alertConexion()
             }
 
         }
     }
 
 
-
+    //Método para renderizar vistas
     const renderizarVista = (vista) => {
         switch (vista) {
             case 2:
@@ -79,6 +78,7 @@ export default function ValidarCodigo(props) {
         }
     }
 
+    //Se verifica que vista se va a renderizar
     useEffect(() => {
         switch (opcion) {
             case "Validar":
@@ -99,9 +99,9 @@ export default function ValidarCodigo(props) {
     return (
         renderizar == 1 ?
             (<View style={styles.container}>
-                <View style={{ flex: 1, color: "#FFF", backgroundColor: Tema.azulDark, marginBottom: 20, minHeight: 50, maxHeight: 50, alignItems: "flex-start", justifyContent: "center", width: screenWidth }}>
-                    <View style={{ flexDirection: "row", justifyContent: "center" }}>
-                        <View style={{ flexDirection: "column", marginRight: 10 }}>
+                <View style={styles.viewSalir}>
+                    <View style={styles.viewContenido}>
+                        <View style={styles.viewIcono}>
                             <Icon
                                 style={{ marginLeft: 10 }}
                                 type="material-community"
@@ -111,8 +111,8 @@ export default function ValidarCodigo(props) {
                                 onPress={regresar}
                             />
                         </View>
-                        <View style={{ flexDirection: "column", justifyContent: "center" }}>
-                            <Text style={{ fontWeight: "bold", color: "#FFF", fontSize: 20 }}>Validar Código</Text>
+                        <View style={styles.viewTexto}>
+                            <Text style={styles.titulo}>Validar Código</Text>
                         </View>
                     </View>
                 </View>
@@ -147,20 +147,46 @@ export default function ValidarCodigo(props) {
                     }
                 />
                 <Loading
-                isVisible={loading}
-                text="Validando código..."
-            />
+                    isVisible={loading}
+                    text="Validando código..."
+                />
                 <Toast ref={toastRefe} opacity={0.9} position="center" />
             </View>) : renderizarVista(renderizar)
     )
 }
 
 const styles = StyleSheet.create({
+    viewSalir: {
+        flex: 1,
+        color: "#FFF",
+        backgroundColor: Tema.azulDark,
+        marginBottom: 20,
+        minHeight: 50,
+        maxHeight: 50,
+        alignItems: "flex-start",
+        justifyContent: "center",
+        width: screenWidth
+    },
+    viewIcono: {
+        flexDirection: "column",
+        marginRight: 10
+    },
+    viewContenido: {
+        flexDirection: "row",
+        justifyContent: "center"
+    },
+    viewTexto: {
+        flexDirection: "column",
+        justifyContent: "center"
+    },
+    titulo: {
+        fontWeight: "bold",
+        color: "#FFF",
+        fontSize: 20
+    },
     container: {
-
         flex: 1,
         paddingTop: StatusBar.currentHeight,
-
     },
     containerInput: {
         width: "100%",

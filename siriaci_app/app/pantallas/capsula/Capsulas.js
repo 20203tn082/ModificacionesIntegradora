@@ -9,13 +9,15 @@ import { useRef } from "react";
 const screenWidth = Dimensions.get("window").width
 
 export default function Capsulas(props) {
+
+  //Constantes globales
   const {navigation} = props;
   const [loading, setLoading] = useState(false)
   const toastRef = useRef()
 
   return (
 
-    <View style={{width: screenWidth, backgroundColor: "#FFF",  flex: 1,}}>
+    <View style={styles.viewCapsulas}>
      <ListaCapsulas navigation={navigation} setLoading={setLoading} toastRef={toastRef}/>
      <Loading
                 isVisible={loading}
@@ -26,4 +28,12 @@ export default function Capsulas(props) {
   );
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+
+  viewCapsulas:{
+    width: screenWidth, 
+    backgroundColor: "#FFF", 
+   flex: 1,
+  }
+
+});

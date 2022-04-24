@@ -11,8 +11,11 @@ import Loading from '../../utiles/Loading'
 import { useRef } from 'react'
 import Toast from 'react-native-easy-toast'
 import Tema from '../../utiles/componentes/Temas'
+import Alerts from '../../utiles/componentes/Alert'
 
 export default function ModificarDatos(props) {
+
+  //Constantes globales
   const navigation = useNavigation()
   const toastRef = useRef()
   const { Usuario, setUpdate } = props.route.params
@@ -48,7 +51,12 @@ export default function ModificarDatos(props) {
   const [loading, setLoading] = useState(false)
   const [loadingDatos, setLoadingDatos] = useState(false)
 
+  //Variables de validacion de errores en los campos correspondientes
   let vNombre = false, vApellido1 = false, vApellido2 = false, vContrasena = false, vTelefono = false, vCarrera = false, vCuatrimestre = false, vGrupo = false;
+ 
+ 
+ 
+  //Ser verifica si el usuario es un estudiante y se obtiene su perfil y su carrera 
   useEffect(() => {
     if (Usuario.estudiante != null) {
       setEstudianteLlegando(true)
@@ -59,83 +67,61 @@ export default function ModificarDatos(props) {
     getPerfil()
   }, [])
 
+
+  //Método para obtener las carreras
   const getCarreras = async () => {
     const response = await Seleccionable.getCarreras()
-    if (response) {
-      if (response.authorization) {
-        if (!response.error) {
+    if (response) { //Sin error de conexión
+      if (response.authorization) { //Con autorización
+        if (!response.error) { //Sin error de servidor 
           setDivisiones(response.datos)
           setCarreras(response.datos[0].carreras)
-        } else {
-          errorServidor()
+        } else { //Con error de servidor 
+          Alerts.alertServidor()
         }
-      } else {
+      } else { //Sin autorización
         alertAuto()
       }
-    } else {
-      Alert.alert("Advertencia", `Error de conexión`,
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-
-            },
-          },
-        ]);
+    } else { //Con error de conexión
+      Alerts.alertConexion()
     }
 
   }
 
+
+  //Método para obtener el perfil 
   const getPerfil = async () => {
     setLoadingDatos(true)
     const response = await UsuarioPeticion.perfil()
-    if (response) {
+    if (response) { //Sin error de conexión  
       setLoadingDatos(false)
-      if (response.authorization) {
-        if (!response.error) {
+      if (response.authorization) { //Con autorización 
+        if (!response.error) { //Sin error de servidor 
           setNombrePre(response.datos.nombre)
           setApellid1Pre(response.datos.apellido1)
           setapellido2Pre(response.datos.apellido2)
           setTelefonoPre(response.datos.telefono)
-          if (response.datos.estudiante) {
+          if (response.datos.estudiante) { //Si el usuario es estudiante 
             setCarreraPre(response.datos.estudiante.carrera.id)
             setCuatrimestrePre(response.datos.estudiante.cuatrimestre)
             setGrupoPre(response.datos.estudiante.grupo)
           }
-        } else {
-          errorServidor()
+        } else { //Con error de servidor 
+          Alerts.alertServidor()
         }
-      } else {
+      } else { //Sin autorización
         setLoadingDatos(false)
         alertAuto()
       }
-    } else {
+    } else { //Sin error de conexión
       setLoadingDatos(false)
-      Alert.alert("Advertencia", `Error de conexión`,
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-
-            },
-          },
-        ]);
+      Alerts.alertConexion()
     }
 
   }
 
 
-  const errorServidor = () => {
-    Alert.alert('Error de servidor', 'intentalo mas tarde',
-      [
-        {
-          text: "Aceptar",
-          onPress: () => {
-          },
-        },
-      ]);
-  }
-
+  //Método que arroja un alert si el usuario no tiene autorización
   const alertAuto = () => {
     Alert.alert('Sesión caducada', 'La sesión ha caducado, vuelve a iniciar sesión.',
       [
@@ -148,41 +134,29 @@ export default function ModificarDatos(props) {
       ]);
   }
 
+
+  //Método general para el cierre de sesión
   const cerrarSesion = async () => {
     const response = await CerrarSesion.desuscribirse()
-    if (response) {
-      if (!response.error) {
+    if (response) { //Sin error de conexión
+      if (!response.error) { //Sin error de servidor 
         await CerrarSesion.cerrarSesion()
         setUpdate(true)
-      } else {
-        Alert.alert("Error", `${response.mensajeGeneral}`,
-          [
-            {
-              text: "Aceptar",
-              onPress: async () => {
-
-              },
-            },
-          ]);
+      } else { //Con error de servidor 
+       Alerts.alertServidor()
       }
-    } else {
-      Alert.alert("Advertencia", `Error de conexión`,
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-
-            },
-          },
-        ]);
+    } else {//Con error de conexión
+      Alerts.alertConexion()
     }
 
   }
 
 
 
+  //Método para modificar el perfil de usuario 
   const modificar = async () => {
 
+    //Validación del nombre 
     if (!isEmpty(nombreUpdate)) {
       if (nombreUpdate.length > 64) {
         setError((error) => ({ ...error, nombre: "Máximo 64 caracteres" }))
@@ -198,6 +172,7 @@ export default function ModificarDatos(props) {
       }
     }
 
+     //Validación del Apellido Paterno
     if (!isEmpty(apellido1Update)) {
       if (apellido1Update.length > 32) {
         setError((error) => ({ ...error, apellido1: "Máximo 32 caracteres" }))
@@ -213,6 +188,8 @@ export default function ModificarDatos(props) {
         }
       }
     }
+
+    //Validación del Apellido Materno 
     if (!isEmpty(apellido2Update)) {
       if (apellido2Update.length > 32) {
         setError((error) => ({ ...error, apellido2: "Máximo 32 caracteres" }))
@@ -228,6 +205,7 @@ export default function ModificarDatos(props) {
       }
     }
 
+    //Validación del Télefono
     if (!isEmpty(telefonoUpdate)) {
       if (!telefonoUpdate.match("^\\d{10}$")) {
         setError((error) => ({ ...error, telefono: "Télefono inválido" }))
@@ -237,6 +215,8 @@ export default function ModificarDatos(props) {
         vTelefono = false
       }
     }
+
+    //Validación de la contraseña
     if (!isEmpty(contrasenaUpdate)) {
       if (contrasenaUpdate.length < 8) {
         setError((error) => ({ ...error, contrasena: "Deben ser mínimo 8 caracteres" }))
@@ -252,8 +232,9 @@ export default function ModificarDatos(props) {
         }
       }
     }
-    if (estudianteLlegando) {
+    if (estudianteLlegando) { //Si el usuario es un estudiante se hacen las siguientes validaciones 
 
+      //Validación de la carrera
       if (!carreraUpdate == "") {
         if (parseInt(carreraUpdate) == 0) {
           setError((error) => ({ ...error, carrera: "Selecciona una carrera" }))
@@ -265,6 +246,7 @@ export default function ModificarDatos(props) {
         }
       }
 
+      //Validación del cuatrimestre
       if (!isEmpty(cuatrimestreUpdate)) {
         if (!(parseInt(cuatrimestreUpdate) >= 1 && parseInt(cuatrimestreUpdate) <= 11)) {
           setError((error) => ({ ...error, cuatrimestre: "Ingresa un cuatrimestre válido" }))
@@ -274,6 +256,8 @@ export default function ModificarDatos(props) {
           vCuatrimestre = false
         }
       }
+
+      //Validación del grupo
       if (!isEmpty(grupoUpdate)) {
         if (grupoUpdate.length != 1) {
           setError((error) => ({ ...error, grupo: "Máximo 1 caracter" }))
@@ -291,87 +275,83 @@ export default function ModificarDatos(props) {
       }
 
 
+      //Si alguna de las variables de verificaciones se encuentra con errores, se manda un mensaje correspondiente 
       if (vNombre || vApellido1 || vApellido2 || vContrasena || vTelefono || vCarrera || vCuatrimestre || vGrupo) {
         toastRef.current.show("Errores de formulario", 3000)
-      } else {
+      } else { //Si todas las variables se encuentran sin errores se realiza las siguientes validaciones 
+
+        //Se declaran las variables atributos y se les asigna los valores ingresados por el usuario 
         let nombre = nombreUpdate, apellido1 = apellido1Update, apellido2 = apellido2Update, telefono = telefonoUpdate, contrasena = contrasenaUpdate, carrera = carreraUpdate, cuatrimestre = cuatrimestreUpdate, grupo = grupoUpdate;
 
-        if (nombreUpdate == "") {
+        if (nombreUpdate == "") { //Si el nombre esta vacio
           nombre = null
         } else {
-
-          if (nombreUpdate === Usuario.nombre) {
+          if (nombreUpdate === Usuario.nombre) { //Si el nombre ingresado es igual al nombre anterior del usuario
             nombre = null
           }
 
         }
 
-        if (apellido1Update == "") {
+        if (apellido1Update == "") { //Si Apellido Paterno esta vacio 
           apellido1 = null
         } else {
-          if (apellido1Update === Usuario.apellido1) {
+          if (apellido1Update === Usuario.apellido1) { //Si Apellido Paterno ingresado es igual al Apellido Paterno anterior del usuario 
             apellido1 = null
           }
 
         }
 
-        if (apellido2Update == "") {
+        if (apellido2Update == "") { //Si Apellido Materno esta vacio 
           apellido2 = null
         } else {
-          if (apellido2Update === Usuario.apellido2) {
+          if (apellido2Update === Usuario.apellido2) { //Si Apellido Materno ingresado es igual al Apellido Materno anterior del usuario 
             apellido2 = null
           }
         }
 
 
-        if (telefonoUpdate == "") {
+        if (telefonoUpdate == "") { //Si el télefono esta vacio 
           telefono = null
-        } else {
-          if (telefonoUpdate === Usuario.telefono) {
+        } else { 
+          if (telefonoUpdate === Usuario.telefono) { //Si el télefono ingresado es igual al télefono anterior del usuario
             telefono = null
           }
         }
 
-        if (contrasenaUpdate == "") {
-          contrasena = null
-        } else {
-          if (contrasenaUpdate === Usuario.contrasena) {
-            contrasena = null
-          }
-        }
-
-        if (carreraUpdate == "0" || carreraUpdate == "") {
+        if (carreraUpdate == "0" || carreraUpdate == "") { //Si la carrera esta vacia
           carrera = null
         } else {
-          if (Usuario.estudiante != null) {
-            if (carreraUpdate === Usuario.estudiante.carrera.id) {
+          if (Usuario.estudiante != null) {  //Si el usuario es estudiante 
+            if (carreraUpdate === Usuario.estudiante.carrera.id) { //Si la carrera ingresada es igual a la carrera anterior del usuario 
               carrera = null
             }
           }
         }
-        if (cuatrimestreUpdate == "") {
+        if (cuatrimestreUpdate == "") {//Si el cuatrimestre esta vacio 
           cuatrimestre = null
         } else {
-          if (Usuario.estudiante != null) {
-            if (parseInt(cuatrimestreUpdate) === Usuario.estudiante.cuatrimestre) {
+          if (Usuario.estudiante != null) { //Si el usuario es estudiante 
+            if (parseInt(cuatrimestreUpdate) === Usuario.estudiante.cuatrimestre) { //Si el cuatrimestre ingresado es igual al cuatrimestre anterior del usuario 
               cuatrimestre = null
             }
           }
         }
 
-        if (grupoUpdate == "") {
+        if (grupoUpdate == "") {//Si el grupo esta vacio 
           grupo = null
         } else {
-          if (Usuario.estudiante != null) {
-            if (grupoUpdate === Usuario?.estudiante.grupo) {
+          if (Usuario.estudiante != null) {//Si el usuario es estudiante
+            if (grupoUpdate === Usuario?.estudiante.grupo) { //Si el grupo ingresado es igual al grupo anterior del usuario
               grupo = null
             }
           }
         }
-        if (nombre == null && apellido1 == null && apellido2 == null && telefono == null && contrasena == null && carrera == null && cuatrimestre == null && grupo == null) {
+
+        //Si todas las variables atributo se encuentran en null, nos e realizan modificaciones 
+        if (nombre == null && apellido1 == null && apellido2 == null && telefono == null && carrera == null && cuatrimestre == null && grupo == null) {
           toastRef.current.show("No se hicieron modificaciones", 3000)
-        } else {
-          let objeto = {
+        } else { //Si alguna de las variables no es nula 
+          let objeto = { //Se construye el objeto 
             nombre: nombre,
             apellido1: apellido1,
             apellido2: apellido2,
@@ -383,13 +363,13 @@ export default function ModificarDatos(props) {
           }
           setLoading(true)
           const response = await UsuarioPeticion.automodificacion(objeto)
-          if (response) {
-            if (response.authorization) {
+          if (response) { //Sin error de conexión
+            if (response.authorization) { //Con autorización
               setLoading(false)
-              if (!response.error) {
+              if (!response.error) { //Sin error de servidor 
                 toastRef.current.show(response.mensajeGeneral, 3000)
 
-                if (contrasena != null) {
+                if (contrasena != null) { //Si la contraseña se ha cambiado 
                   Alert.alert("Advertencia", "Has cambiado tu correo o contraseña debes iniciar sesión de nuevo",
                     [
                       {
@@ -399,14 +379,12 @@ export default function ModificarDatos(props) {
                         },
                       },
                     ]);
-                } else {
-
+                } else { //Si la contraseña no se ha cambiado 
                   navigation.navigate("perfil")
-
                 }
-              } else {
+              } else { //Con error de servidor 
                 toastRef.current.show(response.mensajeGeneral, 3000)
-                if (response.errores) {
+                if (response.errores) { //Errores de formulario arrojados por el back 
                   if (response.errores.nombre == null) {
                     setError((error) => ({ ...error, nombre: "" }))
                   } else {
@@ -451,74 +429,63 @@ export default function ModificarDatos(props) {
                   }
                 }
               }
-            } else {
+            } else { //Sin autorización
               setLoading(false)
               alertAuto()
             }
-          } else {
+          } else { //Con error de conexión
             setLoading(false)
-            Alert.alert("Advertencia", `Error de conexión`,
-              [
-                {
-                  text: "Aceptar",
-                  onPress: async () => {
-
-                  },
-                },
-              ]);
+            Alerts.alertConexion()
           }
         }
       }
-    } else {
+    } else { //Si el usaurio no es estudiante 
+
+      //Se valida si no existen errores en los campos del formulario
       if (vNombre || vApellido1 || vApellido2 || vContrasena || vTelefono) {
         toastRef.current.show("Errores de formulario", 3000)
-      } else {
+      } else { //Si no existen errores en los campos del formulario
+
+        //Se crean las variables atributo a las cuales se les asigna el valor de su campo correspondiente 
         let nombre = nombreUpdate, apellido1 = apellido1Update, apellido2 = apellido2Update, telefono = telefonoUpdate, contrasena = contrasenaUpdate;
 
-        if (nombreUpdate == "") {
+        if (nombreUpdate == "") { //Si el nombre esta vacio 
           nombre = null
         } else {
-          if (nombreUpdate == Usuario.nombre) {
+          if (nombreUpdate == Usuario.nombre) { //Si el nombre ingresado es igual al nombre anterior del usuario 
             nombre = null
           }
         }
 
-        if (apellido1Update == "") {
+        if (apellido1Update == "") { //Si el Apellido Paterno esta vacio 
           apellido1 = null
         } else {
-          if (apellido1Update == Usuario.apellido1) {
+          if (apellido1Update == Usuario.apellido1) { //Si el nombre ingresado es igual al nombre anterior del usuario 
             apellido1 = null
           }
         }
 
-        if (apellido2Update == "") {
+        if (apellido2Update == "") { //Si el Apellido Materno esta vacio 
           apellido2 = null
         } else {
-          if (apellido2Update == Usuario.apellido2) {
+          if (apellido2Update == Usuario.apellido2) { //Si el Apellido Materno ingresado es igual al Apellido Materno anterior del usuario 
             apellido2 = null
           }
         }
 
-        if (telefonoUpdate == "") {
+        if (telefonoUpdate == "") { //Si el télefono esta vacio 
           telefono = null
         } else {
-          if (telefonoUpdate == Usuario.telefono) {
+          if (telefonoUpdate == Usuario.telefono) { //Si el télefono ingresado es igual al télefono anterior del usuario
             telefono = null
           }
         }
 
-        if (contrasenaUpdate == "") {
-          contrasena = null
-        } else {
-          if (contrasenaUpdate == Usuario.contrasena) {
-            contrasena = null
-          }
-        }
-
-        if (nombre == null && apellido1 == null && apellido2 == null && telefono == null && contrasena == null) {
+        //Si las variables atributos se encuentran nulas, no se realizan modificaciones 
+        if (nombre == null && apellido1 == null && apellido2 == null && telefono == null) {
           toastRef.current.show("No se hicieron modificaciones", 3000)
-        } else {
-          let objeto = {
+        } else { //Si alguna variables atributo no esta nula, se realizan modificaciones 
+          let objeto = {  //Se construye el objeto 
             nombre: nombre,
             apellido1: apellido1,
             apellido2: apellido2,
@@ -530,14 +497,12 @@ export default function ModificarDatos(props) {
           }
           setLoading(true)
           const response = await UsuarioPeticion.automodificacion(objeto)
-          if (response) {
-            if (response.authorization) {
-
+          if (response) { //Sin error de conexión
+            if (response.authorization) { //Con autorización
               setLoading(false)
-              if (!response.error) {
+              if (!response.error) { //Sin error de servidor 
                 toastRef.current.show(response.mensajeGeneral, 3000)
-
-                if (contrasena != null) {
+                if (contrasena != null) { //Si se realizó modificación a la contraseña
                   Alert.alert("Advertencia", "Has cambiado tu correo o contraseña debes iniciar sesión de nuevo",
                     [
                       {
@@ -548,14 +513,14 @@ export default function ModificarDatos(props) {
                       },
                     ]);
 
-                } else {
+                } else { //Si no se realizó modificación a la contraseña
                   navigation.navigate("perfil")
 
                 }
-              } else {
+              } else { //Con error de servidor 
                 toastRef.current.show(response.mensajeGeneral, 3000)
 
-                if (response.errores) {
+                if (response.errores) { //Errores de formulario arrojados por el back 
                   if (response.errores.rolResponsable != null) {
                     toastRef.current.show(response.errores.rolResponsable, 3000)
 
@@ -590,21 +555,13 @@ export default function ModificarDatos(props) {
                 }
 
               }
-            } else {
+            } else { //Sin autorización
               setLoading(false)
               alertAuto()
             }
-          } else {
+          } else { //Con error de conexión
             setLoading(false)
-            Alert.alert("Advertencia", `Error de conexión`,
-              [
-                {
-                  text: "Aceptar",
-                  onPress: async () => {
-
-                  },
-                },
-              ]);
+            Alerts.alertConexion()
           }
         }
       }

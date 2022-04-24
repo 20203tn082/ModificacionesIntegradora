@@ -26,10 +26,14 @@ import Toast from "react-native-easy-toast";
 import Loading from "../../utiles/Loading";
 import CerrarSesion from "../../peticiones/usuario/CerrarSesion";
 import Tema from "../../utiles/componentes/Temas";
+import Alerts from "../../utiles/componentes/Alert";
+import Validaciones from "../../utiles/componentes/Validaciones";
 
 const screenWidth = Dimensions.get("window").width
 
 export default function ModificarIncidencia(props) {
+
+    //Constantes globales
     const { Id, setUpdate } = props.route.params
     const navigation = useNavigation()
     const toastRef = useRef()
@@ -53,120 +57,92 @@ export default function ModificarIncidencia(props) {
     const [importanciaPre, setImportanciaPre] = useState("")
     const [descripcionPre, setDescripcionPre] = useState("")
     const [imagenesPre, setImagenesPre] = useState([])
-    let verificar = false
     const [incidencia, setIncidencia] = useState({})
     const [imagenesEliminadas, setImagenesEliminadas] = useState([])
     const [imagenesAgregadas, setImagenesAgregadas] = useState([])
     const [loading, setLoading] = useState(false)
     const [loadingDatos, setLoadingDatos] = useState(false)
 
+    //Variables globales
+    let verificar = false //Verifica errores en en los campos del formulario
+
+    //Se obtiene la Incidencia, los aspectos y las importancias
     useEffect(
         () => {
-            getIncidencia().then((response) => { })
-            getAspectos().then((response) => { })
-            getImportancias().then((response) => { })
+            getIncidencia()
+            getAspectos()
+            getImportancias()
         },
         [],
     )
 
+    //Método para obtener la incidencia
     const getIncidencia = async () => {
         setLoadingDatos(true)
         const response = await IncidenciasUsuario.obtenerIncidencia(Id)
-        if (response) {
+        if (response) { //Sin error de conexión 
             setLoadingDatos(false)
-            if (response.authorization) {
-                if (!response.error) {
+            if (response.authorization) { //Con autorización 
+                if (!response.error) { //Sin error de servidor 
                     setIncidencia(response.datos)
                     setAspectoPre(response.datos.aspecto.id)
                     setImportanciaPre(response.datos.importancia.id)
                     setDescripcionPre(response.datos.descripcion)
                     setImagenesPre(response.datos.imagenesIncidencia)
-                } else {
-                    errorServidor()
-                }
-            } else {
+                } else { //Con error de servidor 
+                    Alerts.alertServidor()
+                } 
+            } else { //Sin autorización
                 alertAuto()
             }
-        } else {
+        } else { //Con error de conexión
             setLoadingDatos(false)
-            Alert.alert("Advertencia", `Error de conexión`,
-                [
-                    {
-                        text: "Aceptar",
-                        onPress: async () => {
-
-                        },
-                    },
-                ]);
+            Alerts.alertConexion()
         }
 
 
 
     }
+    //Método para obtener los aspectos
     const getAspectos = async () => {
         const response = await Seleccionable.getAspectos()
-        if (response) {
-            if (response.authorization) {
-                if (!response.error) {
+        if (response) { //Sin error de conexión 
+            if (response.authorization) { //Con autorización
+                if (!response.error) { //Sin error de servidor 
                     setAspectos(response.datos);
-                } else {
-                    errorServidor()
+                } else { //Con error de servidor 
+                    Alerts.alertServidor()
                 }
-            } else {
+            } else { //Sin autorización
                 alertAuto()
             }
-        } else {
-            Alert.alert("Advertencia", `Error de conexión`,
-                [
-                    {
-                        text: "Aceptar",
-                        onPress: async () => {
-
-                        },
-                    },
-                ]);
+        } else { //Con error de conexión 
+           Alerts.alertConexion()
         }
 
 
 
     }
+    //Método para obtener las importancias
     const getImportancias = async () => {
         const response = await Seleccionable.getImportancias()
-        if (response) {
-            if (response.authorization) {
-                if (!response.error) {
+        if (response) {//Sin error de conexión 
+            if (response.authorization) {  //Con autorización
+                if (!response.error) { //Sin error de servidor
                     setImportancias(response.datos)
-                } else {
-                    errorServidor()
+                } else { //Con error de servidor
+                    Alerts.alertServidor()
                 }
-            } else {
+            } else { //Sin autorización
                 alertAuto()
             }
-        } else {
-            Alert.alert("Advertencia", `Error de conexión`,
-                [
-                    {
-                        text: "Aceptar",
-                        onPress: async () => {
-
-                        },
-                    },
-                ]);
+        } else { //Con error de conexión
+            Alerts.alertConexion()
         }
 
     }
 
-
-    const errorServidor = () => {
-        Alert.alert('Error de servidor', 'intentalo mas tarde',
-            [
-                {
-                    text: "Aceptar",
-                    onPress: () => {
-                    },
-                },
-            ]);
-    }
+   //Método que arroja un alert si el usuario no tienen autorización
     const alertAuto = () => {
         Alert.alert('Sesión caducada', 'La sesión ha caducado, vuelve a iniciar sesión.',
             [
@@ -179,39 +155,27 @@ export default function ModificarIncidencia(props) {
             ]);
     }
 
+    //Método general para cerrar sesión
     const cerrarSesion = async () => {
         const response = await CerrarSesion.desuscribirse()
-        if (response) {
-            if (!response.error) {
+        if (response) { //Sin error de conexión
+            if (!response.error) { //Sin error de servidor
                 await CerrarSesion.cerrarSesion()
                 setUpdate(true)
-            } else {
-                Alert.alert("Error", `${response.mensajeGeneral}`,
-                    [
-                        {
-                            text: "Aceptar",
-                            onPress: async () => {
-
-                            },
-                        },
-                    ]);
+            } else { //Con error de servidor 
+                Alerts.alertServidor()
             }
         } else {
-            Alert.alert("Advertencia", `Error de conexión`,
-                [
-                    {
-                        text: "Aceptar",
-                        onPress: async () => {
-
-                        },
-                    },
-                ]);
+            Alerts.alertConexion()
         }
 
     }
 
 
+    //Método para modificar la incidencia 
     const modificar = async () => {
+
+        //Validación de la descripción
         if (valorDescripcion.length > 255) {
             setError((error) => ({ ...error, descripcion: "Máximo 255 caracteres" }))
             verificar = true
@@ -222,49 +186,51 @@ export default function ModificarIncidencia(props) {
 
 
         let imagenesDTO = []
-        if (size(imagenesEliminadas) > 0) {
+        if (size(imagenesEliminadas) > 0) { //Si hay imagenes eliminadas se agregan al arreglo
             map(imagenesEliminadas, (item) => {
                 imagenesDTO.push({ id: item, imagen: null })
             })
         }
-        if (size(imagenesAgregadas) > 0) {
+        if (size(imagenesAgregadas) > 0) { //Si hay imagenes agregadas se agregan al arreglo
             map(imagenesAgregadas, (item) => {
                 imagenesDTO.push({ id: null, imagen: item })
             })
         }
 
+
+         //Creacion de variables para cada uno de los atributos de la incidencia, se les asigna los valores que fueron ingresados
         let aspecto = aspectoSeleccionado, importancia = importanciaSeleccionada, descripcion = valorDescripcion, imagenesIncidencia = imagenesDTO;
         let latitud, longitud
 
 
-        if (aspecto == "0" || aspecto == "") {
+        if (aspecto == "0" || aspecto == "") { //Si el aspecto se encuentra vacio
             aspecto = null
         } else {
-            if (parseInt(aspecto) == aspectoPre) {
+            if (parseInt(aspecto) == aspectoPre) { //Si el aspecto ingresado es el mismo al anterior de la incidencia
                 aspecto = null
             }
         }
-        if (importancia == "0" || importancia == "") {
+        if (importancia == "0" || importancia == "") { //Si la importancia esta vacia 
             importancia = null
         } else {
-            if (parseInt(importancia) == importanciaPre) {
+            if (parseInt(importancia) == importanciaPre) { //Si la importancia es la misma a la anterior de la incidencia 
                 importancia = null
             }
         }
 
-        if (descripcion == "") {
+        if (descripcion == "") { //Si la descripción esta vacia 
             descripcion = null
         } else {
-            if (valorDescripcion == descripcionPre) {
+            if (valorDescripcion == descripcionPre) { //Si la descripción es la misma a la anterior de la incidencia 
                 descripcion = null
             }
         }
 
-        if (size(imagenesIncidencia) == 0) {
+        if (size(imagenesIncidencia) == 0) { //Si el arreglo de imagenes se encuentra vacio 
             imagenesIncidencia = null
         }
 
-        if (ubicacionSeleccionada == null) {
+        if (ubicacionSeleccionada == null) { //Si la ubicación se encuetra vacia 
             latitud = null
             longitud = null
         } else {
@@ -275,15 +241,15 @@ export default function ModificarIncidencia(props) {
 
 
 
-        if (verificar) {
+        if (verificar) { //Si hay errores de formulario 
             toastRef.current.show("Errores de formularo", 3000)
-        } else {
+        } else { //Si no existen errores de formulario
 
 
-            if (aspecto == null && descripcion == null && importancia == null && longitud == null && latitud == null && size(imagenesIncidencia) == 0) {
+            if (aspecto == null && descripcion == null && importancia == null && longitud == null && latitud == null && size(imagenesIncidencia) == 0) { //Si todas las variables de atributos estan nulas no hay modificaciones
                 toastRef.current.show("Sin datos a modificar", 3000)
-            } else {
-                let incidenciaUpdate = {
+            } else { //Si hay alguna variables que no esta nula 
+                let incidenciaUpdate = { // Se construye el objeto a ingresar
                     aspecto: aspecto,
                     descripcion: descripcion,
                     importancia: importancia,
@@ -293,16 +259,16 @@ export default function ModificarIncidencia(props) {
                 }
                 setLoading(true)
                 const response = await IncidenciasUsuario.modificarIncidencia(incidenciaUpdate, incidencia.id)
-                if (response) {
-                    if (response.authorization) {
-                        if (!response.error) {
+                if (response) { //Sin error de conexión 
+                    if (response.authorization) { //Con autorización
+                        if (!response.error) { //Sin error de servidor 
                             setLoading(false)
                             toastRef.current.show(response.mensajeGeneral, 3000)
                             navigation.navigate("incidencia", { Id: incidencia.id })
-                        } else {
+                        } else { //Con error de servidor 
                             setLoading(false)
                             toastRef.current.show(response.mensajeGeneral, 3000)
-                            if (response.errores) {
+                            if (response.errores) { //Errores de formulario devueltos por el back 
                                 if (response.errores.aspecto) {
                                     setError((error) => ({ ...error, aspecto: response.errores.aspecto }))
                                 } else {
@@ -324,41 +290,28 @@ export default function ModificarIncidencia(props) {
                                     setError((error) => ({ ...error, ubicacion: "" }))
                                 }
                             }
-
                         }
-                    } else {
+                    } else { //Sin autorización
                         setLoading(false)
                         alertAuto()
                     }
-                } else {
+                } else { //Con error de conexión
                     setLoading(false)
-                    Alert.alert("Advertencia", `Error de conexión`,
-                        [
-                            {
-                                text: "Aceptar",
-                                onPress: async () => {
-
-                                },
-                            },
-                        ]);
+                   Alerts.alertConexion()
                 }
 
             }
 
         }
     }
+    //Método que obtiene la información de la imagen 
     const getFileInfo = async (fileURI) => {
         const fileInfo = await FileSystem.getInfoAsync(fileURI)
         return fileInfo
     }
 
-    // Si el tanaño de la imagen es menor o igual al tamaño comparado retorna true
-    // Si el tamaño de la imagen es mayor al tamaño comparado retorna false
-    const isLessThanTheMB = (fileSize, smallerThanSizeMB) => {
-        const isOk = fileSize / 1024 / 1024 <= smallerThanSizeMB
-        return isOk
-    }
 
+    //Método que elimina una imagen actual 
     const removeImage = (imagen) => {
         Alert.alert("Eliminar imagen", "¿Estás seguro de eliminar la imagen?",
             [
@@ -376,6 +329,7 @@ export default function ModificarIncidencia(props) {
             ]);
     };
 
+    //Método que elimina una imagen agregada 
     const removeImageAgregada = (imagen) => {
         Alert.alert("Eliminar imagen", "¿Estás seguro de eliminar la imagen?",
             [
@@ -392,6 +346,7 @@ export default function ModificarIncidencia(props) {
             ]);
     };
 
+    //Método para agregar una imagen por medio de l cámara
     const addImage = async () => {
         const resultPermission = await ImagePicker.requestCameraPermissionsAsync();
         if (resultPermission.status !== "denied") {
@@ -403,7 +358,7 @@ export default function ModificarIncidencia(props) {
             });
             if (!result.cancelled) {
                 const fileInfo = await getFileInfo(result.uri)
-                if (isLessThanTheMB(fileInfo?.size, 10)) {
+                if (Validaciones.isLessThanTheMB(fileInfo?.size, 10)) {
                     toastRef.current.show("Imagen aceptada!");
                     setImagenesAgregadas((imagenesAgregadas) => [...imagenesAgregadas, result.base64]);
                 } else {
@@ -421,6 +376,7 @@ export default function ModificarIncidencia(props) {
         }
     };
 
+    //Método para agregar una imagen desde la libreria 
     const addImageLibrary = async () => {
         const resultPermissions = await Permissions.askAsync(Permissions.CAMERA)
         if (resultPermissions.permissions.camera.status !== 'denied') {
@@ -434,7 +390,7 @@ export default function ModificarIncidencia(props) {
 
             if (!result.cancelled) {
                 const fileInfo = await getFileInfo(result.uri)
-                if (isLessThanTheMB(fileInfo?.size, 10)) {
+                if (Validaciones.isLessThanTheMB(fileInfo?.size, 10)) {
                     toastRef.current.show("Imagen aceptada!");
                     setImagenesAgregadas((imagenesAgregadas) => [...imagenesAgregadas, result.base64]);
                 } else {
@@ -450,160 +406,6 @@ export default function ModificarIncidencia(props) {
             );
         }
     }
-
-
-
-    // const obtenerUbicacion = async (latitude, longitude) => {
-    //     let response = await Location.reverseGeocodeAsync({ latitude, longitude });
-    //     return response
-    // }
-
-    function Map(props) {
-        const { isVisibleMap, setIsVisibleMap, toastRef, setUbicacionSeleccionada } = props
-        const [location, setLocation] = useState()
-        useEffect(() => {
-            (async () => {
-                const resultPermission = await Location.requestForegroundPermissionsAsync()
-                if (resultPermission.status === "granted") {
-                    let loc = await Location.getCurrentPositionAsync({})
-                    setLocation({
-                        latitude: loc.coords.latitude,
-                        longitude: loc.coords.longitude,
-                        latitudeDelta: 0.006,
-                        longitudeDelta: 0.006
-                    })
-                } else {
-                    toastRef.current.show("Es necesario aceptar los permisos de ubbicación")
-                }
-            })() 
-        }, [])
-        const confirmLocation = () => {
-            let bandera = isDentroUtez(location.latitude, location.longitude);
-            if (bandera) {
-                // obtenerUbicacion(location.latitude, location.longitude)
-                //     .then((response) => {
-                //         map(response, (item) => {
-                //             setLugar(item.name)
-                //         })
-                //     })
-                setUbicacionSeleccionada(location)
-                toastRef.current.show("Ubicación guardada")
-            } else {
-                toastRef.current.show("La ubicacion no se encuentra dentro de la UTEZ")
-            }
-
-            setIsVisibleMap(false)
-        }
-        return (
-            <Modal
-                isVisible={isVisibleMap}
-                setIsVisible={setIsVisibleMap}>
-                {location ? (
-                    <View>
-                        <MapView
-                            style={styles.map}
-                            initialRegion={location} 
-                            showsUserLocation={true}
-                            onRegionChange={(region) => setLocation(region)}
-                        >
-                            <MapView.Marker
-                                coordinate={{
-                                    latitude: location.latitude,
-                                    longitude: location.longitude
-                                }}
-                                draggable
-                            />
-                        </MapView>
-
-                        <View style={{ flex: 1, alignItems: "center", marginTop: 10 }}>
-                            <Divider style={styles.divider} />
-                        </View>
-                        <View>
-                            <Button
-                                title="Cancelar"
-                                style={styles.btnContainerCancel}
-                                buttonStyle={styles.btnStyleCancel}
-                                onPress={() => setIsVisibleMap(false)}
-                            />
-                            <Button
-                                title="Guardar ubicación"
-                                containerStyle={styles.btnContainerCancel}
-                                buttonStyle={styles.btnStyleSave}
-                                onPress={confirmLocation}
-                            />
-                        </View>
-                    </View>
-                ) : (
-                    <View>
-                        <ActivityIndicator size="large" color="#131c46" />
-                        <Text style={styles.text}>Cargando Mapa...</Text>
-                        <Button
-                            title="Cancelar"
-                            style={styles.btnContainerCancel}
-                            buttonStyle={styles.btnStyleCancel}
-                            onPress={() => setIsVisibleMap(false)}
-                        />
-                    </View>
-
-                )}
-
-            </Modal>
-        )
-    }
-
-    const isDentroUtez = (latitud, longitud) => {
-        const coordenadasUtez = [
-            [18.848725, -99.202692],
-            [18.852224, -99.202421],
-            [18.853268, -99.200056],
-            [18.852378, -99.199289],
-            [18.851659, -99.199841],
-            [18.851115, -99.199399],
-            [18.850123, -99.199640],
-            [18.849607, -99.199961],
-            [18.849144, -99.199985],
-            [18.849098, -99.200385],
-            [18.848439, -99.200481]
-        ];
-
-        let interseccionesNorte = 0;
-        let interseccionesSur = 0;
-        for (let i = 0; i < coordenadasUtez.length; i++) {
-            // Obtiene un par de puntos de una recta
-            let punto1 = coordenadasUtez[i];
-            let punto2 = coordenadasUtez[i + 1 < coordenadasUtez.length ? i + 1 : 0];
-
-            // Establece el rango de longitudes que abarca la recta
-            let longitudMenor;
-            let longitudMayor;
-            if (punto1[1] > punto2[1]) {
-                longitudMayor = punto1[1];
-                longitudMenor = punto2[1];
-            } else {
-                longitudMayor = punto2[1];
-                longitudMenor = punto1[1];
-            }
-
-            // Evalúa si las coordenadas ingresadas corresponden a un punto dentro del rango
-            if (longitud >= longitudMenor && longitud <= longitudMayor) {
-                // Determina la latitud de la intersección
-                let latitudInterseccion = ((punto2[0] - punto1[0]) / (punto2[1] - punto1[1])) * (longitud - punto1[1]) + punto1[0];
-
-                // Evalúa si la intersección está al norte o al sur del punto
-                if (latitudInterseccion > latitud) interseccionesNorte++;
-                else if (latitudInterseccion < latitud) interseccionesSur++;
-            }
-        }
-
-        // Determina si las coordenadas corresponden a un punto dentro de la figura a partir del número de intersecciones
-        return (interseccionesNorte % 2 == 1 && interseccionesSur % 2 == 1);
-    }
-
-
-
-
-
-
 
     return (
         <ScrollView style={styles.container}>
@@ -821,9 +623,93 @@ export default function ModificarIncidencia(props) {
 }
 
 
+//Método para desplegar el mapa con la ubicación actual del usuario 
+function Map(props) {
+    const { isVisibleMap, setIsVisibleMap, toastRef, setUbicacionSeleccionada } = props
+    const [location, setLocation] = useState()
+    useEffect(() => {
+        (async () => {
+            const resultPermission = await Location.requestForegroundPermissionsAsync()
+            if (resultPermission.status === "granted") {
+                let loc = await Location.getCurrentPositionAsync({})
+                setLocation({
+                    latitude: loc.coords.latitude,
+                    longitude: loc.coords.longitude,
+                    latitudeDelta: 0.006,
+                    longitudeDelta: 0.006
+                })
+            } else {
+                toastRef.current.show("Es necesario aceptar los permisos de ubbicación")
+            }
+        })() 
+    }, [])
+    const confirmLocation = () => {
+        let bandera = Validaciones.isDentroUtez(location.latitude, location.longitude);
+        if (bandera) {
+            setUbicacionSeleccionada(location)
+            toastRef.current.show("Ubicación guardada")
+        } else {
+            toastRef.current.show("La ubicacion no se encuentra dentro de la UTEZ")
+        }
 
+        setIsVisibleMap(false)
+    }
+    return (
+        <Modal
+            isVisible={isVisibleMap}
+            setIsVisible={setIsVisibleMap}>
+            {location ? (
+                <View>
+                    <MapView
+                        style={styles.map}
+                        initialRegion={location} 
+                        showsUserLocation={true}
+                        onRegionChange={(region) => setLocation(region)}
+                    >
+                        <MapView.Marker
+                            coordinate={{
+                                latitude: location.latitude,
+                                longitude: location.longitude
+                            }}
+                            draggable
+                        />
+                    </MapView>
 
+                    <View style={{ flex: 1, alignItems: "center", marginTop: 10 }}>
+                        <Divider style={styles.divider} />
+                    </View>
+                    <View>
+                        <Button
+                            title="Cancelar"
+                            style={styles.btnContainerCancel}
+                            buttonStyle={styles.btnStyleCancel}
+                            onPress={() => setIsVisibleMap(false)}
+                        />
+                        <Button
+                            title="Guardar ubicación"
+                            containerStyle={styles.btnContainerCancel}
+                            buttonStyle={styles.btnStyleSave}
+                            onPress={confirmLocation}
+                        />
+                    </View>
+                </View>
+            ) : (
+                <View>
+                    <ActivityIndicator size="large" color="#131c46" />
+                    <Text style={styles.text}>Cargando Mapa...</Text>
+                    <Button
+                        title="Cancelar"
+                        style={styles.btnContainerCancel}
+                        buttonStyle={styles.btnStyleCancel}
+                        onPress={() => setIsVisibleMap(false)}
+                    />
+                </View>
 
+            )}
+
+        </Modal>
+    )
+}
 
 
 

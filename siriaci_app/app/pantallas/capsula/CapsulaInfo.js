@@ -5,52 +5,39 @@ import CapsulasUsuario from '../../peticiones/capsulas/CapsulasUsuario'
 import { map } from 'lodash'
 import Loading from '../../utiles/Loading'
 import Tema from '../../utiles/componentes/Temas'
+import Alerts from '../../utiles/componentes/Alert'
+import Convertidor from '../../utiles/componentes/Convertidor'
 const screenWidth = Dimensions.get("window").width
 
 export default function CapsulaInfo(props) {
+    //Constantes globales
     const { id } = props.route.params
     const [capsula, setCapsula] = useState({})
     const [imagenes, setImagenes] = useState([])
     const [loading, setLoading] = useState(false)
 
+    //Se obtiene la capsula
     useEffect(() => {
-        getCapsula().then((response) => { })
-
+        getCapsula()
     }, [])
 
     const getCapsula = async () => {
         setLoading(true)
         const response = await CapsulasUsuario.obtenerCapsula(id)
-        if (response) {
-            if (!response.error) {
+        if (response) { //Sin error de conexión
+            if (!response.error) {//Sin error de servidor
                 setCapsula(response.datos)
                 map(response.datos.imagenesCapsula, (item) => {
                     setImagenes((imagen) => [...imagen, `data:image/jpeg;base64, ${item.imagen}`])
                 })
                 setLoading(false)
-            } else {
+            } else {//Con error de servidor
                 setLoading(false)
-                Alert.alert('Error de servidor', 'intentalo mas tarde',
-                    [
-                        {
-                            text: "Aceptar",
-                            onPress: () => {
-                            },
-                        },
-                    ]);
-
+                Alerts.alertServidor()
             }
-        } else {
+        } else {//Con error de conexión
             setLoading(false)
-            Alert.alert("Advertencia", `Error de conexión`,
-                [
-                    {
-                        text: "Aceptar",
-                        onPress: async () => {
-
-                        },
-                    },
-                ]);
+            Alerts.alertConexion()
         }
 
     }
@@ -76,10 +63,11 @@ export default function CapsulaInfo(props) {
         null
 }
 
+//Renderizacion del titulo y fecha de la capsula
 function TituloCapsula(props) {
     const { capsula } = props
     const { titulo, contenido, fechaPublicacion } = capsula
-    const fecha = convertirFechaTexto(fechaPublicacion);
+    const fecha = Convertidor.convertirFechaTexto(fechaPublicacion);
 
     return titulo ? (
         <View style={styles.containerTitle}>
@@ -96,37 +84,7 @@ function TituloCapsula(props) {
     )
         : null
 }
-function convertirFechaTexto(fechaJava) {
-    let fecha = new Date(fechaJava)
-    let mes;
-    switch (fecha.getMonth()) {
-        case 0: mes = "enero"
-            break
-        case 1: mes = "febrero"
-            break
-        case 2: mes = "marzo"
-            break
-        case 3: mes = "abril"
-            break
-        case 4: mes = "mayo"
-            break
-        case 5: mes = "junio"
-            break
-        case 6: mes = "julio"
-            break
-        case 7: mes = "agosto"
-            break
-        case 8: mes = "septiembre"
-            break
-        case 9: mes = "octubre"
-            break
-        case 10: mes = "noviembre"
-            break
-        case 11: mes = "diciembre"
-            break
-    }
-    return `${fecha.getDate()} de ${mes} de ${fecha.getFullYear()}`
-}
+
 
 
 const styles = StyleSheet.create({

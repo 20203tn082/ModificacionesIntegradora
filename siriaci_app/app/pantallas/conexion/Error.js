@@ -3,7 +3,11 @@ import React from 'react'
 import { Button, Image } from 'react-native-elements'
 
 export default function Error(props) {
+
+    //Constantes globales
     const { setUpdate } = props
+
+    //Se ejecuta el useEffect del App.js para verificar si hay conexión a Internet
     const reintentar = () => {
         setUpdate(true)
     }

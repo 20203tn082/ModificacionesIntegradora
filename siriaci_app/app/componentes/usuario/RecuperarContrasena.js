@@ -7,8 +7,13 @@ import Toast from "react-native-easy-toast";
 import ValidarCodigo from "./ValidarCodigo";
 import Loading from "../../utiles/Loading";
 import Tema from "../../utiles/componentes/Temas";
+import Alerts from '../../utiles/componentes/Alert';
+
+
 const screenWidth = Dimensions.get("window").width
 export default function RecuperarContrasena(props) {
+
+  //Constantes globales
   const toastRef = useRef()
   const { setUpdateVista, setOpcion } = props
   const [error, setError] = useState({ correo: "" });
@@ -18,20 +23,26 @@ export default function RecuperarContrasena(props) {
   const [opc, setOpc] = useState("Restablecer")
   const [renderizar, setRenderizar] = useState(1)
   const [loading, setLoading] = useState(false)
+
+
+  //Método de llenado del formulario 
   const change = (event, type) => {
     setObjeto({ ...objeto, [type]: event.nativeEvent.text.trim() });
   };
+
+  //Método para salir a la vista del login 
   const salir = () => {
     setOpcion("Inicio")
     setUpdateVista(true)
   }
 
+  //Método para realizar la solicitud de recuperación
   const recuperar = async () => {
 
-    if (isEmpty(objeto.correo)) {
+    if (isEmpty(objeto.correo)) { //Si campo correo se encuentra vacio
       setError((error) => ({ ...error, correo: "Campo obligatorio" }))
       toastRef.current.show("Errores de formulario", 3000)
-    } else {
+    } else { //Si el campo orreo no se encuentra vacio se hacen las siguientes validaciones
       if (objeto.correo.length > 64) {
         setError((error) => ({ ...error, correo: "Máximo 64 caracteres" }))
         toastRef.current.show("Errores de formulario", 3000)
@@ -39,33 +50,25 @@ export default function RecuperarContrasena(props) {
         if (!objeto.correo.match("^[\\w-.]+@[\\w-.]+\\.[\\w.]+$")) {
           setError((error) => ({ ...error, correo: "Correo electrónico inválido" }))
           toastRef.current.show("Errores de formulario", 3000)
-        } else {
+        } else { //Si no hay errores en el campo correo 
           setError((error) => ({ ...error, correo: "" }))
           setLoading(true)
           const response = await Restablecimiento.registrarSolicitud(objeto)
-          if (response) {
+          if (response) { //Sin error de conexión
             setLoading(false)
-            if (!response.error) {
+            if (!response.error) { //Sin error de servidor
               toastRef.current.show(response.mensajeGeneral, 3000)
               setOpc("Validar")
               setUpdateValidacion(true)
               setCorreoIngresado(objeto.correo)
               setObjeto({ correo: "", codigo: null, contrasena: null })
 
-            } else {
+            } else { //Con error de servidor 
               toastRef.current.show(response.mensajeGeneral, 3000)
             }
           } else {
             setLoading(false)
-            Alert.alert("Advertencia", `Error de conexión`,
-            [
-                {
-                    text: "Aceptar",
-                    onPress: async() => {
-                      
-                    },
-                },
-            ]);
+            Alerts.alertConexion()
           }
 
 
@@ -75,6 +78,7 @@ export default function RecuperarContrasena(props) {
   };
 
 
+  //Método para renderizar la vista
   const renderizarVista = (vista) => {
     switch (vista) {
       case 2:
@@ -84,6 +88,7 @@ export default function RecuperarContrasena(props) {
     }
   }
 
+  //Se verifica que vista se va a renderizar
   useEffect(() => {
     switch (opc) {
       case "Restablecer":
@@ -101,9 +106,9 @@ export default function RecuperarContrasena(props) {
 
   return (
     renderizar == 1 ? (<View style={styles.container}>
-      <View style={{ flex: 1, color: "#FFF", backgroundColor: Tema.azulDark, marginBottom: 20, minHeight: 50, maxHeight: 50, alignItems: "flex-start", justifyContent: "center", width: screenWidth }}>
-        <View style={{ flexDirection: "row", justifyContent: "center" }}>
-          <View style={{ flexDirection: "column", marginRight: 10 }}>
+      <View style={styles.viewSalir}>
+        <View style={styles.viewContenido}>
+          <View style={styles.viewIcono}>
             <Icon
               style={{ marginLeft: 10 }}
               type="material-community"
@@ -114,8 +119,8 @@ export default function RecuperarContrasena(props) {
 
             />
           </View>
-          <View style={{ flexDirection: "column", justifyContent: "center" }}>
-            <Text style={{ fontWeight: "bold", color: "#FFF", fontSize: 20 }}>Recuperar Contraseña</Text>
+          <View style={styles.viewTexto}>
+            <Text style={styles.titulo}>Recuperar Contraseña</Text>
           </View>
         </View>
       </View>
@@ -158,15 +163,43 @@ export default function RecuperarContrasena(props) {
         }
       />
       <Loading
-                isVisible={loading}
-                text="Enviando correo..."
-            />
+        isVisible={loading}
+        text="Enviando correo..."
+      />
       <Toast ref={toastRef} opacity={0.9} position="center" />
     </View>) : renderizarVista(renderizar)
   );
 }
 
 const styles = StyleSheet.create({
+  viewSalir: {
+    flex: 1,
+    color: "#FFF",
+    backgroundColor: Tema.azulDark,
+    marginBottom: 20,
+    minHeight: 50,
+    maxHeight: 50,
+    alignItems: "flex-start",
+    justifyContent: "center",
+    width: screenWidth
+  },
+  viewContenido: {
+    flexDirection: "row",
+    justifyContent: "center"
+  },
+  viewIcono: {
+    flexDirection: "column",
+    marginRight: 10
+  },
+  viewTexto: {
+    flexDirection: "column",
+    justifyContent: "center"
+  },
+  titulo: {
+    fontWeight: "bold",
+    color: "#FFF",
+    fontSize: 20
+  },
   container: {
     flex: 1,
     paddingTop: StatusBar.currentHeight,

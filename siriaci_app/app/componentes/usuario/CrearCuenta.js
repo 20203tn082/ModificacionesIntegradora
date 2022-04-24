@@ -2,16 +2,18 @@ import { StyleSheet, Text, View, SafeAreaView, ScrollView, StatusBar, Picker, Di
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Input, Button, Icon } from "react-native-elements"
 import { includes, isEmpty, map } from "lodash";
-import { useFocusEffect } from "@react-navigation/native";
 import Seleccionable from "../../peticiones/seleccionables/Seleccionable";
 import UsuarioPeticion from "../../peticiones/usuario/UsuarioPeticion";
 import UsuarioPublicoPeticion from "../../peticiones/usuario/UsuarioPublicoPeticion";
 import Toast from "react-native-easy-toast";
 import Loading from "../../utiles/Loading";
 import Tema from "../../utiles/componentes/Temas";
+import Alerts from "../../utiles/componentes/Alert";
 
 const screenWidth = Dimensions.get("window").width
 export default function CrearCuenta(props) {
+
+  //Constantes Globales
   const toastRef = useRef()
   const { setUpdateVista, setOpcion } = props
   const [isEstudiante, setIsEstudiante] = useState(false)
@@ -43,54 +45,41 @@ export default function CrearCuenta(props) {
     cuatrimestre: "",
     grupo: ""
   });
+  const [loading, setLoading] = useState(false)
+  //Variables para verificar errores en sus campos en especifico
   let vNombre = false, vApellido1 = false, vCorreo = false, vContrasena = false, vTelefono = false, verificador = false,
     vCarrera = false, vGrupo = false, vCuatrimestre = false, vConfirmarContrasena = false
-  const [loading, setLoading] = useState(false)
-  useEffect(() => {
 
-    getCarreras().then((response) =>{})
+  //Se obtienen las carreras
+  useEffect(() => {
+    getCarreras()
   }, [])
 
+  //Método para obtener las carreras, asi como las divisiones
   const getCarreras = async () => {
     const response = await Seleccionable.getCarreras()
-    if (response) {
-      if (!response.error) {
+    if (response) { //Sin error de conexión
+      if (!response.error) { //Sin error de servidor
         setDivisiones(response.datos)
         setCarreras(response.datos[0].carreras)
       } else {
-        Alert.alert('Error de servidor', 'intentalo mas tarde',
-          [
-            {
-              text: "Aceptar",
-              onPress: () => {
-              },
-            },
-          ]);
+        Alerts.alertServidor()
       }
     } else {
-      Alert.alert("Advertencia", `Error de conexión`,
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-
-            },
-          },
-        ]);
+      Alerts.alertConexion()
     }
   }
 
-
-
-
+  // Método para salir al login
   const salir = () => {
     setOpcion("Inicio")
     setUpdateVista(true)
   }
 
+  //Método de registar nueva cuenta 
   const registrar = async () => {
 
-    if (!isEmpty(formData.apellido2)) {
+    if (!isEmpty(formData.apellido2)) { //Si el campo de apellido materno no se encuentra vacio se hacen las siguientes validaciones
       if (formData.apellido2.length > 32) {
         toastRef.current.show("Errores de formulario", 3000)
         setError((error) => ({ ...error, apellido2: "Máximo 32 caracteres" }))
@@ -106,13 +95,15 @@ export default function CrearCuenta(props) {
 
         }
       }
-    } else {
+    } else { //Si esta vacio el campo de apellido materno
       setError((error) => ({ ...error, apellido2: "" }))
     }
 
     if (isEmpty(formData.nombre) || isEmpty(formData.apellido1) || isEmpty(formData.correo)
-      || isEmpty(formData.contrasena) || isEmpty(confirmarContrasena) || isEmpty(formData.telefono)) {
+      || isEmpty(formData.contrasena) || isEmpty(confirmarContrasena) || isEmpty(formData.telefono)) { //Si algun campo se encuentra vacio, entra a las siguientes validaciones 
       toastRef.current.show("Errores de formulario", 3000)
+
+      //Validacion del nombre
       if (isEmpty(formData.nombre)) {
         setError((error) => ({ ...error, nombre: "Campo obligatorio" }))
       } else {
@@ -127,6 +118,7 @@ export default function CrearCuenta(props) {
         }
       }
 
+      //Validacion del Apelido Paterno
       if (isEmpty(formData.apellido1)) {
         setError((error) => ({ ...error, apellido1: "Campo obligatorio" }))
       } else {
@@ -141,6 +133,7 @@ export default function CrearCuenta(props) {
         }
       }
 
+      //Validacion del correo
       if (isEmpty(formData.correo)) {
         setError((error) => ({ ...error, correo: "Campo obligatorio" }))
       } else {
@@ -155,6 +148,7 @@ export default function CrearCuenta(props) {
         }
       }
 
+      //Validación de la confirmacion de contraseña
       if (isEmpty(formData.contrasena)) {
         setError((error) => ({ ...error, contrasena: "Campo obligatorio" }))
       } else {
@@ -168,6 +162,8 @@ export default function CrearCuenta(props) {
           }
         }
       }
+
+      //Validación de la confirmacion de contraseña
       if (isEmpty(confirmarContrasena)) {
         setError((error) => ({ ...error, confirmarContrasena: "Campo obligatorio" }))
       } else {
@@ -185,6 +181,8 @@ export default function CrearCuenta(props) {
           }
         }
       }
+
+      //Validación del telefono 
       if (isEmpty(formData.telefono)) {
         setError((error) => ({ ...error, telefono: "Campo obligatorio" }))
       } else {
@@ -194,15 +192,19 @@ export default function CrearCuenta(props) {
           setError((error) => ({ ...error, telefono: "" }))
         }
       }
-      if (isEstudiante) {
-        if ((isEmpty(formData.carrera) || parseInt(formData) == 0) || isEmpty(formData.cuatrimestre) ||
-          isEmpty(formData.grupo)) {
 
+      if (isEstudiante) {  //Si el usuario ingreso un correo de estudiante se hacen las siguientes validaciones
+        if ((isEmpty(formData.carrera) || parseInt(formData) == 0) || isEmpty(formData.cuatrimestre) ||
+          isEmpty(formData.grupo)) { //Si alguno de los campos se encuentra vacio 
+
+          //Validación de la carrera
           if ((formData.carrera == "" || parseInt(formData.carrera) == 0)) {
             setError((error) => ({ ...error, carrera: "Campo obligatorio" }))
           } else {
             setError((error) => ({ ...error, carrera: "" }))
           }
+
+          //Validación del grupo
           if (isEmpty(formData.grupo)) {
             setError((error) => ({ ...error, grupo: "Campo obligatorio" }))
           } else {
@@ -217,6 +219,7 @@ export default function CrearCuenta(props) {
             }
           }
 
+          //Validación del cuatrimestre
           if (isEmpty(formData.cuatrimestre)) {
             setError((error) => ({ ...error, cuatrimestre: "Campo obligatorio" }))
           } else {
@@ -227,15 +230,16 @@ export default function CrearCuenta(props) {
             }
           }
 
-        } else {
+        } else { //Si los campos no estan vacios
           setError((error) => ({ ...error, carrera: "", grupo: "", cuatrimestre: "" }))
         }
       }
-    } else {
+    } else { //Si los campos de un usuario normal no estan vacios 
 
+
+      //Validación del nombre
       if (formData.nombre.length > 64) {
         setError((error) => ({ ...error, nombre: "Máximo 64 caracteres" }))
-
         vNombre = true
       } else {
         if (!formData.nombre.match("^[a-zA-Z\\xC0-\\uFFFF][a-zA-Z\\xC0-\\uFFFF-]+( [a-zA-Z\\xC0-\\uFFFF-]+)*$")) {
@@ -247,6 +251,7 @@ export default function CrearCuenta(props) {
         }
       }
 
+      //Validación del apellido paterno
       if (formData.apellido1.length > 32) {
         setError((error) => ({ ...error, apellido1: "Máximo 32 caracteres" }))
         vApellido1 = true
@@ -260,6 +265,7 @@ export default function CrearCuenta(props) {
         }
       }
 
+      //Validación del correo 
       if (formData.correo.length > 64) {
         setError((error) => ({ ...error, correo: "Máximo 64 caracteres" }))
         vCorreo = true
@@ -273,7 +279,7 @@ export default function CrearCuenta(props) {
         }
       }
 
-
+      //Validación de la contraseña
       if (formData.contrasena.length < 8) {
         setError((error) => ({ ...error, contrasena: "Deben ser mínimo 8 caracteres" }))
         vContrasena = true
@@ -287,7 +293,7 @@ export default function CrearCuenta(props) {
         }
       }
 
-
+      //Validación de la confirmación de la contraseña
       if (confirmarContrasena.length < 8) {
         setError((error) => ({ ...error, confirmarContrasena: "Deben ser mínimo 8 caracteres" }))
         vConfirmarContrasena = true
@@ -306,6 +312,7 @@ export default function CrearCuenta(props) {
         }
       }
 
+      //Validación del télefono
       if (!formData.telefono.match("^\\d{10}$")) {
         setError((error) => ({ ...error, telefono: "Télefono inválido" }))
         vTelefono = true
@@ -314,10 +321,11 @@ export default function CrearCuenta(props) {
         vTelefono = false
       }
 
-      if (isEstudiante) {
+      if (isEstudiante) {//Si el usuario ingreso un correo de estudiante se hacen las siguientes validaciones
         if ((formData.carrera == "" || parseInt(formData.carrera) == 0) || isEmpty(formData.cuatrimestre) ||
-          isEmpty(formData.grupo)) {
+          isEmpty(formData.grupo)) { //Si los campos de estudiante se encuentra vacios se hacen las validaciones
 
+          //Validación de la carrera
           if ((formData.carrera == "" || parseInt(formData.carrera) == 0)) {
             setError((error) => ({ ...error, carrera: "Campo obligatorio" }))
             vCarrera = true
@@ -325,6 +333,8 @@ export default function CrearCuenta(props) {
             setError((error) => ({ ...error, carrera: "" }))
             vCarrera = false
           }
+
+          //Validación del grupo
           if (isEmpty(formData.grupo)) {
             setError((error) => ({ ...error, grupo: "Campo obligatorio" }))
             vGrupo = true
@@ -343,6 +353,7 @@ export default function CrearCuenta(props) {
             }
           }
 
+          //Validación del cuatrimestre
           if (isEmpty(formData.cuatrimestre)) {
             setError((error) => ({ ...error, cuatrimestre: "Campo obligatorio" }))
             vCuatrimestre = true
@@ -356,9 +367,10 @@ export default function CrearCuenta(props) {
             }
           }
 
-        } else {
+        } else { //Si los campos pertenecientes a un estudiante no se encuentran vacios 
           setError((error) => ({ ...error, carrera: "" }))
 
+          //Validación del grupo
           if (formData.grupo.length != 1) {
             setError((error) => ({ ...error, grupo: "Máximo 1 caracter" }))
             vGrupo = true
@@ -372,6 +384,7 @@ export default function CrearCuenta(props) {
             }
           }
 
+          //Validación del cuatrimestre
           if (!(parseInt(formData.cuatrimestre) >= 1 && parseInt(formData.cuatrimestre) <= 11)) {
             setError((error) => ({ ...error, cuatrimestre: "Ingresa un cuatrimestre válido" }))
             vCuatrimestre = true
@@ -382,13 +395,14 @@ export default function CrearCuenta(props) {
         }
 
 
+        //Si algun campo tiene algun error, entrará en el bloque verdadero del if 
         if (vNombre || vApellido1 || verificador || vCorreo || vTelefono || vContrasena || vConfirmarContrasena
           || vCarrera || vCuatrimestre || vGrupo) {
 
           toastRef.current.show("Errores de formulario", 3000)
-        } else {
+        } else { //Si ningún camo tuvo error se hace la peticion 
 
-          let objeto = {
+          let objeto = { //Se construye el objeto perteneciente a un estudiante
             nombre: formData.nombre,
             apellido1: formData.apellido1,
             apellido2: formData.apellido2,
@@ -401,15 +415,15 @@ export default function CrearCuenta(props) {
           }
           setLoading(true)
           const response = await UsuarioPublicoPeticion.autoregistro(objeto)
-          if (response) {
+          if (response) { //Sin error de conexión 
             setLoading(false)
-            if (!response.error) {
+            if (!response.error) {//Sin error de servidor 
               setError((error) => ({ ...error, nombre: "", apellido1: "", apellido2: "", correo: "", contrasena: "", telefono: "", carrera: "", grupo: "", cuatrimestre: "" }))
               toastRef.current.show(response.mensajeGeneral, 3000)
               salir();
-            } else {
+            } else { //Con error de servidor 
               toastRef.current.show(response.mensajeGeneral, 3000)
-              if (response.errores) {
+              if (response.errores) { //Errores de formulario arrojados por el back 
                 if (response.errores.nombre == null) {
                   setError((error) => ({ ...error, nombre: "" }))
                 } else {
@@ -460,25 +474,18 @@ export default function CrearCuenta(props) {
 
               }
             }
-          } else {
+          } else { //Con error de conexión
             setLoading(false)
-            Alert.alert("Advertencia", `Error de conexión`,
-              [
-                {
-                  text: "Aceptar",
-                  onPress: async () => {
-
-                  },
-                },
-              ]);
+            Alerts.alertConexion()
           }
         }
 
-      } else {
+      } else {//Si el usuario no ingreso un correo de estudiante
+        //Si hay errores en algun campo pertenecientes a un usuario normal, entra en el bloque de verdadero del if
         if (vNombre || vApellido1 || verificador || vCorreo || vTelefono || vContrasena || vConfirmarContrasena) {
           toastRef.current.show("Errores de formulario", 3000)
         } else {
-          let objeto = {
+          let objeto = { //Se construye el objeto de un usuario normal
             nombre: formData.nombre,
             apellido1: formData.apellido1,
             apellido2: formData.apellido2,
@@ -491,15 +498,15 @@ export default function CrearCuenta(props) {
           }
           setLoading(true)
           const response = await UsuarioPublicoPeticion.autoregistro(objeto)
-          if (response) {
+          if (response) {//Sin error de conexión
             setLoading(false)
-            if (!response.error) {
+            if (!response.error) {//Sin error de servidor
               setError((error) => ({ ...error, nombre: "", apellido1: "", apellido2: "", correo: "", contrasena: "", telefono: "" }))
               toastRef.current.show(response.mensajeGeneral, 3000)
               salir();
-            } else {
+            } else { //Con error de servidor 
               toastRef.current.show(response.mensajeGeneral, 3000)
-              if (response.errores) {
+              if (response.errores) { //Errores de formulario arrojados por el back 
                 if (response.errores.nombre == null) {
                   setError((error) => ({ ...error, nombre: "" }))
                 } else {
@@ -534,17 +541,9 @@ export default function CrearCuenta(props) {
                 }
               }
             }
-          } else {
+          } else {//Con error de conexión 
             setLoading(false)
-            Alert.alert("Advertencia", `Error de conexión`,
-              [
-                {
-                  text: "Aceptar",
-                  onPress: async () => {
-
-                  },
-                },
-              ]);
+            Alerts.alertConexion()
           }
         }
       }
@@ -552,6 +551,7 @@ export default function CrearCuenta(props) {
   }
 
 
+  //Método de llenado del formulario 
   const change = (event, type) => {
     if (includes(type, "carrera")) {
       setFormData({ ...formData, [type]: event });
@@ -563,6 +563,7 @@ export default function CrearCuenta(props) {
 
 
 
+  //Método para verificar el correo del usuario 
   const verificarCorreo = (event) => {
     if (event.match("^i?20\\d{2}3\\w{2}\\d{3}@utez.edu.mx$")) {
       setIsEstudiante(true);
@@ -574,9 +575,9 @@ export default function CrearCuenta(props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={{ flex: 1, color: "#FFF", backgroundColor: Tema.azulDark, minHeight: 50, maxHeight: 50, alignItems: "flex-start", justifyContent: "center", width: screenWidth }}>
-        <View style={{ flexDirection: "row", justifyContent: "center" }}>
-          <View style={{ flexDirection: "column", marginRight: 10 }}>
+      <View style={styles.viewSalir}>
+        <View style={styles.viewContenido}>
+          <View style={styles.viewIcono}>
             <Icon
               style={{ marginLeft: 10 }}
               type="material-community"
@@ -587,8 +588,8 @@ export default function CrearCuenta(props) {
 
             />
           </View>
-          <View style={{ flexDirection: "column", justifyContent: "center" }}>
-            <Text style={{ fontWeight: "bold", color: "#FFF", fontSize: 20 }}>Crear Cuenta</Text>
+          <View style={styles.viewTitulo}>
+            <Text style={styles.titulo}>Crear Cuenta</Text>
           </View>
         </View>
       </View>
@@ -772,6 +773,33 @@ export default function CrearCuenta(props) {
 }
 
 const styles = StyleSheet.create({
+  viewSalir: {
+    flex: 1,
+    color: "#FFF",
+    backgroundColor: Tema.azulDark,
+    minHeight: 50,
+    maxHeight: 50,
+    alignItems: "flex-start",
+    justifyContent: "center",
+    width: screenWidth
+  },
+  viewContenido: {
+    flexDirection: "row",
+    justifyContent: "center"
+  },
+  viewIcono: {
+    flexDirection: "column",
+    marginRight: 10
+  },
+  viewTitulo: {
+    flexDirection: "column",
+    justifyContent: "center"
+  },
+  titulo: {
+    fontWeight: "bold",
+    color: "#FFF",
+    fontSize: 20
+  },
   container: {
     flex: 1,
     paddingTop: StatusBar.currentHeight,
@@ -783,7 +811,7 @@ const styles = StyleSheet.create({
     marginLeft: 130,
     marginBottom: 20,
     color: "#fff",
-    backgroundColor: Tema.verde,
+    backgroundColor:Tema.azul,
   },
   labelInput: {
     color: Tema.azulDark

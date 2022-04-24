@@ -12,14 +12,13 @@ import { useRef } from "react";
 import Tema from "../../utiles/componentes/Temas";
   
   export default function Reporte(props) {
+
+    //Constantes globales
     const {navigation} = props
     const {setUpdate } = props.route.params
     const [loading, setLoading] = useState(false)
     const toastRef = useRef()
     
-
-
-
     return (
       <View style={styles.container}>
         <ListReportes  navigarion={navigation} setLoading={setLoading} setUpdate={setUpdate} toastRef={toastRef}/>

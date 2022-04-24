@@ -7,9 +7,12 @@ import Toast from 'react-native-easy-toast'
 import { useRef } from 'react'
 import Loading from '../../utiles/Loading'
 import Tema from '../../utiles/componentes/Temas'
+import Alerts from "../../utiles/componentes/Alert"
+
 
 const screenWidth = Dimensions.get("window").width
 export default function CambiarContrasena(props) {
+    //Constantes globales
     const toastRef = useRef()
     const { setVista, setOpcionValidar, datos, setUpdateVista, setOpcion } = props
     const [objeto, setObjeto] = useState({ correo: datos.correo, codigo: datos.codigo, contrasena: "" })
@@ -19,17 +22,22 @@ export default function CambiarContrasena(props) {
     const [showConfirmPassword, setShowConfirmPassword] = useState(true)
     let vContrasena = false, vConfirmarContrasena = false
     const [loading, setLoading] = useState(false)
+
+    //Método para regresar a la pantalla de Validar
     const regresar = () => {
         setOpcionValidar("Validar")
         setVista(true)
     }
 
+    //Método para el llenado del formulario
     const change = (event, type) => {
         setObjeto({ ...objeto, [type]: event.nativeEvent.text.trim() });
     };
 
+
+    //Método para cambiar la contraseña
     const cambiar = async () => {
-        if (isEmpty(objeto.contrasena) || isEmpty(confirmarContrasena)) {
+        if (isEmpty(objeto.contrasena) || isEmpty(confirmarContrasena)) { //Si los campos de contraseña se encuentran vacios
             toastRef.current.show("Errores de formulario", 3000)
 
             if (isEmpty(objeto.contrasena)) {
@@ -62,7 +70,7 @@ export default function CambiarContrasena(props) {
                     }
                 }
             }
-        } else {
+        } else { //Si los campos de contraseña no se encuentran vacios 
 
             if (objeto.contrasena.length < 8) {
                 setError((error) => ({ ...error, contrasena: "Deben ser mínimo 8 caracteres" }))
@@ -92,18 +100,18 @@ export default function CambiarContrasena(props) {
                     }
                 }
             }
-            if (vContrasena || vConfirmarContrasena) {
+            if (vContrasena || vConfirmarContrasena) { // Si hay errores en los campos de contraseñas
                 toastRef.current.show("Errores de formulario", 3000)
             } else {
                 setLoading(true)
                 const response = await Restablecimiento.validarYRestablecer(objeto)
-                if (response) {
+                if (response) { //Sin error conexion
                     setLoading(false)
-                    if (!response.error) {
+                    if (!response.error) {//Sin errores de servidor
                         toastRef.current.show(response.mensajeGeneral, 3000)
                         setOpcion("Inicio")
                         setUpdateVista(true)
-                    } else {
+                    } else {//Con errores de servidor
                         toastRef.current.show(response.mensajeGeneral, 3000)
                         if (response.errores) {
                             if (response.errores.contrasena) {
@@ -111,17 +119,9 @@ export default function CambiarContrasena(props) {
                             }
                         }
                     }
-                } else {
+                } else {//Con error conexion
                     setLoading(false)
-                    Alert.alert("Advertencia", `Error de conexión`,
-                        [
-                            {
-                                text: "Aceptar",
-                                onPress: async () => {
-
-                                },
-                            },
-                        ]);
+                    Alerts.alertConexion()
                 }
             }
 

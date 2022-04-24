@@ -1,15 +1,10 @@
 import { StyleSheet, Text, View, ScrollView, Alert } from "react-native";
 import React, { useState, useRef, useEffect } from "react";
-//import NavegacionInvitado from "./app/navegaciones/NavegacionInvitado"
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LogBox } from "react-native";
 import InicioSesion from "./app/componentes/usuario/InicioSesion";
-import { Button } from "react-native-elements";
 import NavegacionUsuario from "./app/navegaciones/NavegacionUsuario";
 import Error from "./app/pantallas/conexion/Error";
 import NetInfo from '@react-native-community/netinfo';
-import * as Notifications from 'expo-notifications'; 
-import * as Permissions from "expo-permissions"
 import ObtenerSesion from "./app/peticiones/sesion/ObtenerSesion";
 
 
@@ -20,7 +15,7 @@ export default function App() {
   const [render, setRender] = useState(1);
 
 
-
+  //Se verifica si hay una conexión a internet para posteriormente verificar si existe una sesión
   useEffect(() => {
     NetInfo.fetch().then(state => {
       if (state.isConnected) {
@@ -50,6 +45,7 @@ export default function App() {
   
 
 
+  //Método para renderizar alguna de las 3 vistas principales
   const renderizar = (render) => {
     switch (render) {
       case 1:

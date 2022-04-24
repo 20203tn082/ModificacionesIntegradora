@@ -9,14 +9,19 @@ import Tema from '../../utiles/componentes/Temas'
 const screenWidth = Dimensions.get("window").width
 
 export default function CapsulaInvitado(props) {
+  //Constantes globales
   const { setUpdateVista, setOpcion } = props.route.params
   const toastRef = useRef()
   const { navigation } = props;
   const [loading, setLoading] = useState(false)
+
+  //Método para salir al login 
   const salir = () => {
     setOpcion("Inicio")
     setUpdateVista(true)
   }
+
+  //Se cambia el options del navigation
   useEffect(() => {
     navigation.setOptions({
       header: (props) => (
@@ -37,7 +42,7 @@ export default function CapsulaInvitado(props) {
   )
 }
 
-
+//Se renderiza la vista para el header del options del navigation
 function TestNew(props) {
   const { salir } = props;
   return (

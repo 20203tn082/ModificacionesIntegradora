@@ -5,24 +5,29 @@ import Toast from 'react-native-easy-toast';
 import FormularioReporte from '../../componentes/reporte/FormularioReporte';
 
 export default function CrearReporte(props) {
-    const {navigation} = props
-    const { setUpdate } = props.route.params
-    const toastRef = useRef();
+  //Constantes globales
+  const { navigation } = props
+  const { setUpdate } = props.route.params
+  const toastRef = useRef();
   return (
-    <View style={{backgroundColor: "#FFF", width: "100%"}}>
-      <FormularioReporte navigation={navigation} toastRef={toastRef} setUpdate={setUpdate}/>
-      <Toast ref={toastRef} opacity={0.9} position="center"/>
+    <View style={styles.viewReporte}>
+      <FormularioReporte navigation={navigation} toastRef={toastRef} setUpdate={setUpdate} />
+      <Toast ref={toastRef} opacity={0.9} position="center" />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
 
-  contenedor:{
+  contenedor: {
     flex: 1,
-    alignItems:"center",
+    alignItems: "center",
     justifyContent: "center",
     marginTop: 20
+  },
+  viewReporte: {
+    backgroundColor: "#FFF",
+    width: "100%"
   }
 
 })

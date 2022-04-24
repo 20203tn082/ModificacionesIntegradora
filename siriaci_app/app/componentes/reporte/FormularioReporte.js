@@ -24,10 +24,13 @@ import * as FileSystem from 'expo-file-system'
 import Loading from "../../utiles/Loading";
 import CerrarSesion from "../../peticiones/usuario/CerrarSesion";
 import Tema from "../../utiles/componentes/Temas";
+import Alerts from "../../utiles/componentes/Alert";
+import Validaciones from "../../utiles/componentes/Validaciones";
 
 const screenWidth = Dimensions.get("window").width
 
 export default function FormularioReporte(props) {
+  //Constantes globales
   const { toastRef, navigation, setUpdate } = props
   const [selectedValue, setSelectedValue] = useState("");
   const [aspectos, setAspectos] = useState([])
@@ -45,9 +48,12 @@ export default function FormularioReporte(props) {
     descripcion: null,
     ubicacion: null,
   })
-  let verificar = false
   const [loading, setLoading] = useState(false)
 
+  //Variable encargada de verificar errores de formulario
+  let verificar = false
+ 
+  //Ejecucion cada que haya un focus 
   useFocusEffect(
     useCallback(() => {
       getAspectos()
@@ -56,6 +62,7 @@ export default function FormularioReporte(props) {
     }, [])
   )
 
+  // Método para obtener los aspectos
   const getAspectos = async () => {
     const response = await Seleccionable.getAspectos()
     if (response) {
@@ -63,24 +70,18 @@ export default function FormularioReporte(props) {
         if (!response.error) {
           setAspectos(response.datos);
         } else {         
-          errorServidor()
+          Alerts.alertServidor()
         }
       } else {
         alertAuto()
       }
     } else {
-      Alert.alert("Advertencia", `Error de conexión`,
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-
-            },
-          },
-        ]);
+      Alerts.alertConexion()
     }
 
   }
+
+  //Método para obtener las importancias
   const getImportancias = async () => {
     const response = await Seleccionable.getImportancias()
     if (response) {
@@ -88,34 +89,17 @@ export default function FormularioReporte(props) {
         if(!response.error){
         setImportancias(response.datos)
         }else{
-          errorServidor()
+          Alerts.alertServidor()
         }
       } else {
         alertAuto()
       }
     } else {
-      Alert.alert("Advertencia", `Error de conexión`,
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-
-            },
-          },
-        ]);
+      Alerts.alertConexion()
     }
   }
 
-  const errorServidor = () =>{
-          Alert.alert('Error de servidor', 'intentalo mas tarde',
-            [
-              {
-                text: "Aceptar",
-                onPress: () => {
-                },
-              },
-            ]);
-  }
+  //Método para mostrar que la sesion fue caducada
   const alertAuto = () => {
     Alert.alert('Sesión caducada', 'La sesión ha caducado, vuelve a iniciar sesión.',
       [
@@ -129,6 +113,7 @@ export default function FormularioReporte(props) {
   }
 
 
+  //Método General para el cierre de sesión
   const cerrarSesion = async () => {
     const response = await CerrarSesion.desuscribirse()
     if (response) {
@@ -136,35 +121,20 @@ export default function FormularioReporte(props) {
         await CerrarSesion.cerrarSesion()
         setUpdate(true)
       } else {
-        Alert.alert("Error", `${response.mensajeGeneral}`,
-          [
-            {
-              text: "Aceptar",
-              onPress: async () => {
-
-              },
-            },
-          ]);
+        Alerts.alertServidor()
       }
     } else {
-      Alert.alert("Advertencia", `Error de conexión`,
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-
-            },
-          },
-        ]);
+      Alerts.alertConexion()
     }
 
   }
 
+  //Método para registar la incidencia
   const registrar = async () => {
 
     if (parseInt(aspectoSeleccionado) == 0 || parseInt(importanciaSeleccionada) == 0 || isEmpty(descripcion)
-      || isEmpty(ubicacionSeleccionada)) {
-      toastRef.current.show("Errores en el formulario", 3000);
+      || isEmpty(ubicacionSeleccionada)) {  // Validaciones si las variables condicionadas se encuentran vacias
+      toastRef.current.show("Errores en el formulario", 3000); //Toast de error
       //Verificacion de Aspecto
       if (parseInt(aspectoSeleccionado) == 0) {
         setError((error) => ({ ...error, aspecto: "Campo Obligatorio" }))
@@ -198,12 +168,15 @@ export default function FormularioReporte(props) {
       }
 
     } else {
+      //Seteo de mensajes de error
       setError({
         aspecto: "",
         importancia: "",
         descripcion: "",
         ubicacion: "",
       })
+
+      //Validacion de descripcion
       if (descripcion.length > 255) {
         setError((error) => ({ ...error, descripcion: "Máximo 255 caracteres" }))
         verificar = true
@@ -212,30 +185,40 @@ export default function FormularioReporte(props) {
         verificar = false
       }
 
-      if (verificar) {
+
+      if (verificar) { // Validacion de la variable que verifica errores de formulario
         toastRef.current.show("Errores en el formulario", 3000);
       } else {
         let imagenesDTO = [];
-        if (size(imagenes) > 0) {
+        if (size(imagenes) > 0) { // Creacion del arreglo con las imagenes agregadas 
           imagenes.map((item) => {
             imagenesDTO.push({ id: null, imagen: item })
           })
         } else {
           imagenesDTO = null;
         }
-        setLoading(true)
-        const response = await IncidenciasUsuario.registrarIncidencia({ aspecto: parseInt(aspectoSeleccionado), descripcion: descripcion, importancia: parseInt(importanciaSeleccionada), longitud: ubicacionSeleccionada.longitude, latitud: ubicacionSeleccionada.latitude, imagenesIncidencia: imagenesDTO })
-        if (response) {
-          if (response.authorization) {
 
-            if (!response.error) {
+        let objeto={  //Creacion del objeto a mandar a la petición
+          aspecto: parseInt(aspectoSeleccionado), 
+          descripcion: descripcion, 
+          importancia: parseInt(importanciaSeleccionada), 
+          longitud: ubicacionSeleccionada.longitude, 
+          latitud: ubicacionSeleccionada.latitude, 
+          imagenesIncidencia: imagenesDTO 
+        }
+
+        setLoading(true)
+        const response = await IncidenciasUsuario.registrarIncidencia(objeto)
+        if (response) { // Sin error de conexión
+          if (response.authorization) { // Con autorización
+            if (!response.error) { // Sin errores de servidor 
               toastRef.current.show(response.mensajeGeneral, 3000);
               setLoading(false)
-              navigation.navigate("pantallaReporte")
+              navigation.navigate("pantallaReporte") // Se cambia a la pantalla de Lista de reportes despues de haber agregado un reporte con éxito 
             } else {
               setLoading(false)
               toastRef.current.show(response.mensajeGeneral, 3000);
-              if (response.errores) {
+              if (response.errores) { // Si hay errores de formulario 
                 if (response.errores.aspecto) {
                   setError((error) => ({ ...error, aspecto: response.errores.aspecto }))
                 } else {
@@ -265,33 +248,22 @@ export default function FormularioReporte(props) {
 
         } else {
           setLoading(false)
-          Alert.alert("Advertencia", `Error de conexión`,
-            [
-              {
-                text: "Aceptar",
-                onPress: async () => {
-
-                },
-              },
-            ]);
+          Alerts.alertConexion()
         }
 
       }
     }
   }
 
+  //Método para obtener la informacion del archivo 
   const getFileInfo = async (fileURI) => {
     const fileInfo = await FileSystem.getInfoAsync(fileURI)
     return fileInfo
   }
 
-  // Si el tanaño de la imagen es menor o igual al tamaño comparado retorna true
-  // Si el tamaño de la imagen es mayor al tamaño comparado retorna false
-  const isLessThanTheMB = (fileSize, smallerThanSizeMB) => {
-    const isOk = fileSize / 1024 / 1024 <= smallerThanSizeMB
-    return isOk
-  }
 
+
+  //Método para eliminar una imagen agregada
   const removeImage = (imagen) => {
     Alert.alert("Eliminar imagen", "¿Estás seguro de eliminar la imagen?",
       [
@@ -308,152 +280,7 @@ export default function FormularioReporte(props) {
       ]);
   };
 
-
-  // const obtenerUbicacion = async (latitude, longitude) => {
-  //   let response = await Location.reverseGeocodeAsync({ latitude, longitude });
-  //   return response
-  // }
-
-  function Map(props) {
-    const { isVisibleMap, setIsVisibleMap, toastRef, setUbicacionSeleccionada } = props
-    const [location, setLocation] = useState()
-    useEffect(() => {
-      (async () => {
-        const resultPermission = await Location.requestForegroundPermissionsAsync()
-        if (resultPermission.status === "granted") {
-          let loc = await Location.getCurrentPositionAsync({})
-          setLocation({
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude,
-            latitudeDelta: 0.006,
-            longitudeDelta: 0.006
-          })
-        } else {
-          toastRef.current.show("Es necesario aceptar los permisos de ubicación", 3000)
-        }
-      })() 
-    }, [])
-    const confirmLocation = () => {
-      let bandera = isDentroUtez(location.latitude, location.longitude);
-      if (bandera) {
-        // obtenerUbicacion(location.latitude, location.longitude)
-        //   .then((response) => {
-        //     map(response, (item) => {
-        //       setLugar(item.name)
-        //     })
-        //   })
-        setUbicacionSeleccionada(location)
-        toastRef.current.show("Ubicación guardada", 3000)
-      } else {
-        toastRef.current.show("La ubicacion no se encuentra dentro de la UTEZ", 3000)
-      }
-      setIsVisibleMap(false)
-    }
-    return (
-      <Modal
-        isVisible={isVisibleMap}
-        setIsVisible={setIsVisibleMap}>
-        
-          {location ? (
-            <View>
-            <MapView
-              style={styles.map}
-              initialRegion={location} 
-              showsUserLocation={true}
-              onRegionChange={(region) => setLocation(region)}
-            >
-              <MapView.Marker
-                coordinate={{
-                  latitude: location.latitude,
-                  longitude: location.longitude
-                }}
-                draggable
-              />
-            </MapView>
-          
-          <View style={{ flex: 1, alignItems: "center", marginTop: 10 }}>
-            <Divider style={styles.divider} />
-          </View>
-          <View>
-            <Button
-              title="Cancelar"
-              style={styles.btnContainerCancel}
-              buttonStyle={styles.btnStyleCancel}
-              onPress={() => setIsVisibleMap(false)}
-            />
-            <Button
-              title="Guardar ubicación"
-              containerStyle={styles.btnContainerCancel}
-              buttonStyle={styles.btnStyleSave}
-              onPress={confirmLocation}
-            />
-          </View>
-        </View>
-        ) : (
-          <View>
-          <ActivityIndicator size="large" color="#131c46" />         
-           <Text style={styles.text}>Cargando Mapa...</Text>  
-            <Button
-              title="Cancelar"
-              style={styles.btnContainerCancel}
-              buttonStyle={styles.btnStyleCancel}
-              onPress={() => setIsVisibleMap(false)}
-            />       
-         </View>
-         
-        )}
-      </Modal>
-    )
-  }
-
-  const isDentroUtez = (latitud, longitud) => {
-    const coordenadasUtez = [
-      [18.848725, -99.202692],
-      [18.852224, -99.202421],
-      [18.853268, -99.200056],
-      [18.852378, -99.199289],
-      [18.851659, -99.199841],
-      [18.851115, -99.199399],
-      [18.850123, -99.199640],
-      [18.849607, -99.199961],
-      [18.849144, -99.199985],
-      [18.849098, -99.200385],
-      [18.848439, -99.200481]
-    ];
-
-    let interseccionesNorte = 0;
-    let interseccionesSur = 0;
-    for (let i = 0; i < coordenadasUtez.length; i++) {
-      // Obtiene un par de puntos de una recta
-      let punto1 = coordenadasUtez[i];
-      let punto2 = coordenadasUtez[i + 1 < coordenadasUtez.length ? i + 1 : 0];
-
-      // Establece el rango de longitudes que abarca la recta
-      let longitudMenor;
-      let longitudMayor;
-      if (punto1[1] > punto2[1]) {
-        longitudMayor = punto1[1];
-        longitudMenor = punto2[1];
-      } else {
-        longitudMayor = punto2[1];
-        longitudMenor = punto1[1];
-      }
-
-      // Evalúa si las coordenadas ingresadas corresponden a un punto dentro del rango
-      if (longitud >= longitudMenor && longitud <= longitudMayor) {
-        // Determina la latitud de la intersección
-        let latitudInterseccion = ((punto2[0] - punto1[0]) / (punto2[1] - punto1[1])) * (longitud - punto1[1]) + punto1[0];
-
-        // Evalúa si la intersección está al norte o al sur del punto
-        if (latitudInterseccion > latitud) interseccionesNorte++;
-        else if (latitudInterseccion < latitud) interseccionesSur++;
-      }
-    }
-
-    // Determina si las coordenadas corresponden a un punto dentro de la figura a partir del número de intersecciones
-    return (interseccionesNorte % 2 == 1 && interseccionesSur % 2 == 1);
-  }
-
+ //Método para agregar una imagen por medio de camara
   const addImage = async () => {
     const resultPermission = await ImagePicker.requestCameraPermissionsAsync();
     if (resultPermission.status !== "denied") {
@@ -465,7 +292,7 @@ export default function FormularioReporte(props) {
       });
       if (!result.cancelled) {
         const fileInfo = await getFileInfo(result.uri)
-        if (isLessThanTheMB(fileInfo?.size, 10)) {
+        if (Validaciones.isLessThanTheMB(fileInfo?.size, 10)) { //Valida el size de la imagen para poder agregarla al arrelo
           toastRef.current.show("Imagen aceptada!", 3000);
           setImagenes([...imagenes, result.base64]);
         } else {
@@ -482,6 +309,7 @@ export default function FormularioReporte(props) {
     }
   };
 
+  //Método para agregar una imagen por medio de la libreria
   const addImageLibrary = async () => {
     const resultPermissions = await Permissions.askAsync(Permissions.CAMERA)
     if (resultPermissions.permissions.camera.status !== 'denied') {
@@ -496,7 +324,7 @@ export default function FormularioReporte(props) {
       if (!result.cancelled) {
         const fileInfo = await getFileInfo(result.uri)
         if (isLessThanTheMB(fileInfo?.size, 10)) {
-          toastRef.current.show("Imagen aceptada!", 3000);
+          toastRef.current.show("Imagen aceptada!", 3000); //Valida el size de la imagen para poder agregarla al arrelo
           setImagenes([...imagenes, result.base64]);
         } else {
           toastRef.current.show("La imagen debe ser menor o igual a 10 MB", 3000);
@@ -684,6 +512,93 @@ export default function FormularioReporte(props) {
       </View>
     </ScrollView>
   );
+}
+
+// Renderizacion del Mapa
+function Map(props) {
+  const { isVisibleMap, setIsVisibleMap, toastRef, setUbicacionSeleccionada } = props
+  const [location, setLocation] = useState()
+  useEffect(() => {
+    (async () => {
+      const resultPermission = await Location.requestForegroundPermissionsAsync()
+      if (resultPermission.status === "granted") {
+        let loc = await Location.getCurrentPositionAsync({})
+        setLocation({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.006,
+          longitudeDelta: 0.006
+        })
+      } else {
+        toastRef.current.show("Es necesario aceptar los permisos de ubicación", 3000)
+      }
+    })() 
+  }, [])
+  const confirmLocation = () => {
+    let bandera = Validaciones.isDentroUtez(location.latitude, location.longitude);
+    if (bandera) {
+      setUbicacionSeleccionada(location)
+      toastRef.current.show("Ubicación guardada", 3000)
+    } else {
+      toastRef.current.show("La ubicacion no se encuentra dentro de la UTEZ", 3000)
+    }
+    setIsVisibleMap(false)
+  }
+  return (
+    <Modal
+      isVisible={isVisibleMap}
+      setIsVisible={setIsVisibleMap}>
+      
+        {location ? (
+          <View>
+          <MapView
+            style={styles.map}
+            initialRegion={location} 
+            showsUserLocation={true}
+            onRegionChange={(region) => setLocation(region)}
+          >
+            <MapView.Marker
+              coordinate={{
+                latitude: location.latitude,
+                longitude: location.longitude
+              }}
+              draggable
+            />
+          </MapView>
+        
+        <View style={{ flex: 1, alignItems: "center", marginTop: 10 }}>
+          <Divider style={styles.divider} />
+        </View>
+        <View>
+          <Button
+            title="Cancelar"
+            style={styles.btnContainerCancel}
+            buttonStyle={styles.btnStyleCancel}
+            onPress={() => setIsVisibleMap(false)}
+          />
+          <Button
+            title="Guardar ubicación"
+            containerStyle={styles.btnContainerCancel}
+            buttonStyle={styles.btnStyleSave}
+            onPress={confirmLocation}
+          />
+        </View>
+      </View>
+      ) : (
+        <View>
+        <ActivityIndicator size="large" color="#131c46" />         
+         <Text style={styles.text}>Cargando Mapa...</Text>  
+          <Button
+            title="Cancelar"
+            style={styles.btnContainerCancel}
+            buttonStyle={styles.btnStyleCancel}
+            onPress={() => setIsVisibleMap(false)}
+          />       
+       </View>
+       
+      )}
+    </Modal>
+  )
 }
 
 const styles = StyleSheet.create({

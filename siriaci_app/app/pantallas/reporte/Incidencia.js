@@ -12,9 +12,12 @@ import CerrarSesion from '../../peticiones/usuario/CerrarSesion'
 import Toast from 'react-native-easy-toast'
 import { useRef } from 'react'
 import Tema from '../../utiles/componentes/Temas'
+import Alerts from '../../utiles/componentes/Alert'
 
 const screenWidth = Dimensions.get("window").width
 export default function Incidencia(props) {
+
+    //Constantes globales
     const navigation = useNavigation()
     const toastRef = useRef()
     const { id, setUpdate } = props.route.params
@@ -22,21 +25,26 @@ export default function Incidencia(props) {
     const [estado, setEstado] = useState()
     const [imagenes, setImagenes] = useState([])
     const [loading, setLoading] = useState(false)
+
+
+    //Ejecución cada que exista un focus
     useFocusEffect(
         useCallback(() => {
             setIncidencia([])
             setImagenes([])
             setEstado("")
             setLoading(true)
-            getIncidencia().then((response) => { });
+            getIncidencia()
 
         }, [])
     )
+
+    //Método para obtener la Incidencia
     const getIncidencia = async () => {
         const response = await IncidenciasUsuario.obtenerIncidencia(id)
-        if (response) {
-            if (response.authorization) {
-                if (!response.error) {
+        if (response) {//Sin error de conexión
+            if (response.authorization) {//Con autorización
+                if (!response.error) {//Sin error de servidor
                     setIncidencia(response.datos)
                     setLoading(false)
                     if (response.datos.imagenesIncidencia != null) {
@@ -45,20 +53,11 @@ export default function Incidencia(props) {
                         })
                     }
                     setEstado(response.datos.estado.id)
-                } else {
+                } else {//Con error de servidor
                     setLoading(false)
-                    Alert.alert('Error de servidor', 'intentalo mas tarde',
-                      [
-                        {
-                          text: "Aceptar",
-                          onPress: () => {
-                          },
-                        },
-                      ]);
-                  
+                    Alerts.alertServidor()
                 }
-
-            } else {
+            } else { //Sin autorización
                 setLoading(false)
                 Alert.alert('Sesión caducada', 'La sesión ha caducado, vuelve a iniciar sesión.',
                     [
@@ -70,50 +69,28 @@ export default function Incidencia(props) {
                         },
                     ]);
             }
-        } else {
+        } else { //Con error de conexión
             setLoading(false)
-            Alert.alert("Advertencia", `Error de conexión`,
-                [
-                    {
-                        text: "Aceptar",
-                        onPress: async () => {
-
-                        },
-                    },
-                ]);
+            Alerts.alertConexion()
         }
     }
 
+
+    //Método general para el cierre de sesión
     const cerrarSesion = async () => {
         const response = await CerrarSesion.desuscribirse()
-        if (response) {
-          if (!response.error) {
-            await CerrarSesion.cerrarSesion()
-            setUpdate(true)
-          } else {
-            Alert.alert("Error", `${response.mensajeGeneral}`,
-            [
-              {
-                text: "Aceptar",
-                onPress: async () => {
-  
-                },
-              },
-            ]);
-          }
-        } else {
-          Alert.alert("Advertencia", `Error de conexión`,
-            [
-              {
-                text: "Aceptar",
-                onPress: async () => {
-    
-                },
-              },
-            ]);
+        if (response) { //Sin error de conexión
+            if (!response.error) {//Sin error de servidor
+                await CerrarSesion.cerrarSesion()
+                setUpdate(true)
+            } else { //Con error de servidor
+                Alerts.alertServidor()
+            }
+        } else {//Con error de conexión
+            Alerts.alertConexion()
         }
-    
-      }
+
+    }
 
     return incidencia != null ? (
         <ScrollView style={styles.scrollView}>
@@ -122,7 +99,7 @@ export default function Incidencia(props) {
                 height={250}
                 width={screenWidth}
             />
-            <TituloIncidencia
+            <DescripcionIncidencia
                 incidencia={incidencia} />
             <Aspectos
                 incidencia={incidencia}
@@ -173,7 +150,9 @@ export default function Incidencia(props) {
     ) : null
 
 }
-function TituloIncidencia(props) {
+
+//Renderizacion de la descripción de la incidencia
+function DescripcionIncidencia(props) {
 
     const { incidencia } = props
     const { descripcion } = incidencia
@@ -189,6 +168,8 @@ function TituloIncidencia(props) {
 
 }
 
+
+//Renderización del mapa con la ubicación de la incidencia
 function MapIncidencia(props) {
     const { incidencia } = props
     const { latitud, longitud } = incidencia
@@ -204,35 +185,34 @@ function MapIncidencia(props) {
 
 }
 
-
-
+//Renderizacion de los aspectos de la incidencia (importancia, aspecto y estado)
 function Aspectos(props) {
     const { incidencia } = props
     const { aspecto, importancia, estado } = incidencia
     return (
         aspecto ? (
-            <View style={{ flex: 1, alignItems: "flex-start" }}>
-                <View style={{ flexDirection: "row", paddingLeft: 20, paddingTop: 5, alignItems: "center", }}>
-                    <View style={{ flexDirection: "column" }}>
-                        <Text style={{ fontSize: 18, fontWeight: "bold" }}>Aspecto:  </Text>
+            <View style={styles.viewAspectos}>
+                <View style={styles.aspecto}>
+                    <View style={styles.viewContenido}>
+                        <Text style={styles.titulo}>Aspecto:  </Text>
                     </View>
-                    <View style={{ flexDirection: "column" }}>
-                        <Text style={{ fontSize: 18, marginLeft: 5 }}>{aspecto.nombre}</Text>
+                    <View style={styles.viewContenido}>
+                        <Text style={styles.titulo}>{aspecto.nombre}</Text>
                     </View>
                 </View>
-                <View style={{ flexDirection: "row", paddingLeft: 20, paddingTop: 15, alignItems: "center" }}>
-                    <View style={{ flexDirection: "column" }}>
-                        <Text style={{ fontSize: 18, fontWeight: "bold" }}>Importancia:  </Text>
+                <View style={styles.aspectoSecundario}>
+                    <View style={styles.viewContenido}>
+                        <Text style={styles.titulo}>Importancia:  </Text>
                     </View>
-                    <View style={{ flexDirection: "column" }}>
+                    <View style={styles.viewContenido}>
                         <Importancia importancia={importancia} />
                     </View>
                 </View>
-                <View style={{ flexDirection: "row", paddingLeft: 20, paddingTop: 15, alignItems: "center" }}>
-                    <View style={{ flexDirection: "column" }}>
-                        <Text style={{ fontSize: 18, fontWeight: "bold" }}>Estado:  </Text>
+                <View style={styles.aspectoSecundario}>
+                    <View style={styles.viewContenido}>
+                        <Text style={styles.titulo}>Estado:  </Text>
                     </View>
-                    <View style={{ flexDirection: "column" }}>
+                    <View style={styles.viewContenido}>
                         <Estado estado={estado} />
                     </View>
                 </View>
@@ -241,6 +221,8 @@ function Aspectos(props) {
         ) : null
     )
 }
+
+//Renderización de la importancia 
 function Importancia(props) {
     const { importancia } = props;
     switch (importancia.id) {
@@ -256,6 +238,8 @@ function Importancia(props) {
             break;
     }
 }
+
+//Renderización del estado
 function Estado(props) {
     const { estado } = props;
     switch (estado.id) {
@@ -269,17 +253,19 @@ function Estado(props) {
             break;
     }
 }
+
+//Renderización de los comentarios
 function Comentarios(props) {
     const { incidencia } = props
     const { comentario } = incidencia
     return comentario ?
         (
             <View>
-                <View style={{ flexDirection: "row", justifyContent: "flex-start", alignItems: "flex-start", paddingLeft: 15 }}>
-                    <Text style={{ fontSize: 20, fontWeight: "bold" }}> Comentario:</Text>
+                <View style={styles.viewComentario}>
+                    <Text style={styles.tituloComentario}> Comentario:</Text>
                 </View>
-                <View style={{ flexDirection: "row", paddingLeft: 20 }}>
-                    <Text style={{ fontSize: 18, textAlign: "justify" }}>{comentario}</Text>
+                <View style={styles.viewDescripcion}>
+                    <Text style={styles.comentario}>{comentario}</Text>
                 </View>
             </View>
 
@@ -293,6 +279,47 @@ function Comentarios(props) {
 
 
 const styles = StyleSheet.create({
+    comentario: {
+        fontSize: 18,
+        textAlign: "justify"
+    },
+    tituloComentario: {
+        fontSize: 20,
+        fontWeight: "bold"
+    },
+    viewComentario: {
+        flexDirection: "row",
+        justifyContent: "flex-start",
+        alignItems: "flex-start",
+        paddingLeft: 15
+    },
+    viewDescripcion: {
+        flexDirection: "row",
+        paddingLeft: 20,
+    },
+    viewAspectos: {
+        flex: 1,
+        alignItems: "flex-start"
+    },
+    viewContenido: {
+        flexDirection: "column"
+    },
+    aspecto: {
+        flexDirection: "row",
+        paddingLeft: 20,
+        paddingTop: 5,
+        alignItems: "center",
+    },
+    titulo: {
+        fontSize: 18,
+        fontWeight: "bold"
+    },
+    aspectoSecundario: {
+        flexDirection: "row",
+        paddingLeft: 20,
+        paddingTop: 15,
+        alignItems: "center"
+    },
     containerTitle: {
         backgroundColor: "#FFF",
         padding: 20,

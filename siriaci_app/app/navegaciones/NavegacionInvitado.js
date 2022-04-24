@@ -24,6 +24,7 @@ export default function NavegacionInvitado(props) {
                 })}
 
             >
+              {/*Pila de capsula invitado*/}
                <Tab.Screen
                     name="capsula"
                     component={PilaCapsulaInvitado}

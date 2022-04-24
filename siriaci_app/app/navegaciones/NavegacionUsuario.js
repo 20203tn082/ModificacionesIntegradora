@@ -27,19 +27,21 @@ export default function NavegacionUsuario(props) {
                     headerShown: false
                 })}
             >
-
+             {/*Pila de Cápsulas*/}
                 <Tab.Screen
                     name='capsulas'
                     initialParams={{ setUpdate: setUpdate }}
                     component={PilaCapsula}
                     options={{ title: "Cápsula informativa" }}
                 />
+            {/*Pila de reportes de incidencias*/}
                 <Tab.Screen
                     name='reporte'
                     initialParams={{ setUpdate: setUpdate }}
                     component={PilaReporte}
                     options={{ title: "Reporte" }}
                 />
+            {/*Pila de perfil de usuario*/}
                 <Tab.Screen
                     name='perfil'
                     initialParams={{ setUpdate: setUpdate }}

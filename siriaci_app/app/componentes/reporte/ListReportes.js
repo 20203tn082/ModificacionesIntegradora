@@ -7,9 +7,11 @@ import { Card } from 'react-native-paper'
 import { Button, Divider, Input, Icon } from 'react-native-elements'
 import CerrarSesion from '../../peticiones/usuario/CerrarSesion'
 import Tema from '../../utiles/componentes/Temas'
+import Alerts from '../../utiles/componentes/Alert'
 
 
 export default function ListReportes(props) {
+  //Constantes globales
   const navigation = useNavigation()
   const { setLoading, setSession, setUpdate, toastRef } = props
   const [reportes, setReportes] = useState([])
@@ -23,9 +25,12 @@ export default function ListReportes(props) {
   const [lastFiltro, setLastFiltro] = useState(false)
   const [paginaFiltro, setPaginaFiltro] = useState(2)
   const [cargar, setCargar] = useState(false)
-  const [pendiente, setPendiente] = useState(false)
+  const [pendiente, setPendiente] = useState(false)// Constante que verifica el estado de la consulta, impide que no se generé una consulta nueva si no ha terminado la primera
+
+  //Variable encargada de verificar errores de formulario
   let verificador = false
 
+  //Ejecucion de codigo cada que exista un focus 
   useFocusEffect(
     useCallback(() => {
       setLoading(true)
@@ -35,14 +40,15 @@ export default function ListReportes(props) {
       setReportes([]);
       setPaginaFiltro(2)
       setLast(false);
-      getDatos(1).then((response) => { });
+      getDatos(1);
 
     }, [])
   );
 
+  //Método para filtrar por descripción del reporte de incidencia
   const filtrar = () => {
-    if (isEmpty(filtro)) {
-      toastRef.current.show("Errores de formulario", 3000)
+    if (isEmpty(filtro)) {//Validaciones si el filtro esta vacio
+      toastRef.current.show("Errores de formulario", 3000)//Toast de error
       if (isEmpty(filtro)) {
         setError((error) => ({ ...error, filtro: "Campo obligatorio" }));
       } else {
@@ -52,7 +58,7 @@ export default function ListReportes(props) {
           setError((error) => ({ ...error, filtro: "" }));
         }
       }
-    } else {
+    } else {//Validaciones si el filtro no esta vacio
       if (filtro.length > 128) {
         setError((error) => ({ ...error, filtro: "Máximo 128 caracteres" }));
         verificador = true;
@@ -60,25 +66,25 @@ export default function ListReportes(props) {
         setError((error) => ({ ...error, filtro: "" }));
         verificador = false;
       }
-      if (!verificador) {
+      if (!verificador) {//Si no hay errores en validaciones, se realiza la peticion 
         setIsFiltro(true)
         setLoading(true)
         setReportesFiltro([])
         setPaginaFiltro(2)
         getDatosFiltro(1, filtro);
-      } else {
+      } else { //Si hay errores en la validaciones, se muestra un mensaje
         toastRef.current.show("Errores de formulario", 3000)
       }
     }
   };
 
-
+  // Método para obtener datos de reportes sin Filtro
   const getDatos = async (pagina) => {
     setPendiente(false)
     const response = await IncidenciasUsuario.obtenerIncidenciasRealizadas(pagina, filtro);
-    if (response) {
-      if (response.authorization) {
-        if (!response.error) {
+    if (response) { // Sin error de conexión
+      if (response.authorization) { //Con autorizacion 
+        if (!response.error) {//Sin error de servidor
           map(response.datos.content, (item) => {
             setReportes((capsulas) => [...capsulas, item]);
           });
@@ -87,42 +93,26 @@ export default function ListReportes(props) {
           setIsLoading(false);
           setLast(response.datos.last);
           setPendiente(true)
-        } else {
-          errorServidor()
+        } else {//Con error de servidor
+          Alerts.alertServidor()
         }
-      } else {
+      } else {//Sin autorizacion 
         setLoading(false)
-        Alert.alert('Sesión caducada', 'La sesión ha caducado, vuelve a iniciar sesión.',
-          [
-            {
-              text: "Aceptar",
-              onPress: () => {
-                cerrarSesion()
-              },
-            },
-          ]);
-
+        alertAuto()
       }
-    } else {
+    } else {//Con error de conexión
       setLoading(false)
-      Alert.alert("Advertencia", `Error de conexión`,
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-
-            },
-          },
-        ]);
+      Alerts.alertConexion()
     }
   };
 
+  //Método para obtener datos de reportes de incidencias con Filtro
   const getDatosFiltro = async (pagina, filtro) => {
     setPendiente(false)
     const response = await IncidenciasUsuario.obtenerIncidenciasRealizadas(pagina, filtro);
-    if (response) {
-      if (response.authorization) {
-        if (!response.error) {
+    if (response) {// Sin error de conexión
+      if (response.authorization) {// Con autorizacion
+        if (!response.error) {// Sin error de servidor
           map(response.datos.content, (item) => {
             setReportesFiltro((capsulas) => [...capsulas, item]);
           });
@@ -131,48 +121,35 @@ export default function ListReportes(props) {
           setIsLoading(false);
           setLastFiltro(response.datos.last);
           setPendiente(true)
-        } else {
+        } else {// Con error de servidor
           setLoading(false)
-          errorServidor()
+          Alerts.alertServidor()
         }
-      } else {
+      } else {//Sin autorizacion
         setLoading(false)
-        Alert.alert('Sesión caducada', 'La sesión ha caducado, vuelve a iniciar sesión.',
-          [
-            {
-              text: "Aceptar",
-              onPress: () => {
-                cerrarSesion()
-              },
-            },
-          ]);
+        alertAuto()
       }
-    } else {
+    } else {// Con error de conexión
       setLoading(false)
-      Alert.alert("Advertencia", `Error de conexión`,
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-
-            },
-          },
-        ]);
+      Alerts.alertConexion()
     }
   };
 
-
-  const errorServidor = () => {
-    Alert.alert('Error de servidor', 'intentalo mas tarde',
+  //Método que ejecuta un alert de no autorizacion
+  const alertAuto = () => {
+    Alert.alert('Sesión caducada', 'La sesión ha caducado, vuelve a iniciar sesión.',
       [
         {
           text: "Aceptar",
           onPress: () => {
+            cerrarSesion()
           },
         },
       ]);
   }
 
+
+  //Método General de cierre de sesión
   const cerrarSesion = async () => {
     const response = await CerrarSesion.desuscribirse()
     if (response) {
@@ -180,41 +157,27 @@ export default function ListReportes(props) {
         await CerrarSesion.cerrarSesion()
         setUpdate(true)
       } else {
-        Alert.alert("Error", `${response.mensajeGeneral}`,
-          [
-            {
-              text: "Aceptar",
-              onPress: async () => {
-
-              },
-            },
-          ]);
+        Alerts.alertServidor()
       }
     } else {
-      Alert.alert("Advertencia", `Error de conexión`,
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-
-            },
-          },
-        ]);
+      Alerts.alertConexion()
     }
 
   }
-
+  //Método de renderizacion para el pie del FlatList
   const renderFooter = () => {
-    return isLoading ? (
-      <View style={{ marginTop: 10, alignContent: "center" }}>
+    return isLoading ? (// Se condiciona el isLoading, el cual verifica el estado de la peticion, terminada= true, en curso=false
+      <View style={{ marginTop: 10, alignContent: "center", backgroundColor: "#FFF" }}>
         <ActivityIndicator size="large" color="#131c46" />
       </View>
     ) : null;
   };
 
+  // Método que se acciona cada que llega al final del FlatList
+  // Este método se acciona si se esta trabajando con resportes de incidencias sin Filtro
   const handleMoreDataFiltro = () => {
-    if (pendiente) {
-      if (!lastFiltro) {
+    if (pendiente) { // Verifica que no haya ninguna peticion pendiente
+      if (!lastFiltro) {// Verifica el estado de la página de la consulta, última pagina = true 
         setPaginaFiltro(paginaFiltro + 1);
         setIsLoading(true);
         getDatosFiltro(paginaFiltro, filtro);
@@ -223,10 +186,11 @@ export default function ListReportes(props) {
 
   };
 
-
+  // Método que se acciona cada que llega al final del FlatList
+  // Este método se acciona si se esta trabajando con resportes de incidencias con Filtro
   const handleMoreData = () => {
-    if (pendiente) {
-      if (!last) {
+    if (pendiente) { // Verifica que no haya ninguna peticion pendiente
+      if (!last) {// Verifica el estado de la página de la consulta, última pagina = true 
         setPagina(pagina + 1);
         setIsLoading(true);
         getDatos(pagina);
@@ -235,6 +199,8 @@ export default function ListReportes(props) {
 
   };
 
+
+  //Método para deshacer el filtrado
   const deshacer = () => {
     setIsFiltro(false)
     setPaginaFiltro(2)
@@ -244,87 +210,38 @@ export default function ListReportes(props) {
 
   return (
     <FlatList
-      ListHeaderComponent={
-        <View>
-          <View style={{ flexDirection: "row", paddingTop: 20, width: "100%", justifyContent: "center", backgroundColor: "#FFF" }}>
-
-            <View style={{ flexDirection: "column", width: "80%" }}>
-              <Input
-                placeholder="Buscar"
-                defaultValue={filtro}
-                leftIcon={{
-                  type: "material-community",
-                  name: "magnify",
-                  color: "#1A2760",
-                }}
-                leftIconContainerStyle={{ marginLeft: 10 }}
-                inputContainerStyle={{
-                  backgroundColor: "white",
-                  borderRadius: 10,
-                }}
-                onChangeText={(value) => setFiltro(value.trim())}
-                style={{ color: "black" }}
-                errorMessage={error.filtro}
-              />
-
-            </View>
-
-          </View>
-          <View style={{ flexDirection: "row", width: "100%", backgroundColor: "#FFF", justifyContent: "center", paddingRight: 14 }}>
-            <View style={{ flexDirection: "column", marginRight: 10 }}>
-              <Button
-                title="Limpiar filtrado"
-                icon={
-                  <Icon
-                    name="delete"
-                    type="material-community"
-                    color="#fff"
-                    size={20}
-                  />
-                }
-                buttonStyle={{ backgroundColor: Tema.rojo, marginBottom: 10 }}
-                onPress={deshacer}
-              />
-            </View>
-            <View style={{ flexDirection: "column" }}>
-
-              <Button
-                title="Filtrar"
-                icon={
-                  <Icon
-                    name="filter"
-                    type="material-community"
-                    color="#fff"
-                    size={20}
-                  />
-                }
-                buttonStyle={{ backgroundColor: Tema.verde }}
-                onPress={filtrar}
-              />
-            </View>
-          </View>
-        </View>
-
+      ListHeaderComponent={ // Renderiza un componente de encabezado
+        <RenderHeader filtro={filtro} error={error.filtro} setFiltro={setFiltro} deshacer={deshacer} filtrar={filtrar} />
       }
-      data={isFiltro ? reportesFiltro : reportes}
+      data={isFiltro ? reportesFiltro : reportes}// Valida si se trabaja con reportes sin filtro o con filtro
       renderItem={(reporte) => (
         <Reporte reporte={reporte} navigation={navigation} setUpdate={setUpdate} />
       )}
       keyExtractor={(item, index) => index.toString()}
-      ListFooterComponent={renderFooter}
-      onEndReached={() => { isFiltro ? handleMoreDataFiltro() : handleMoreData() }}
+      ListFooterComponent={renderFooter}// Renderiza un componente en el pie
+      onEndReached={() => {//Se ejecuta cada que llega al final del Flatlist
+         isFiltro ? handleMoreDataFiltro() : handleMoreData() //Valida si se trabaja con reportes con filtro o sin filtro
+         }}
       onEndReachedThreshold={0}
-      stickyHeaderIndices={[0]}
-      ListEmptyComponent={
-        <View style={{ flexDirection: "row", justifyContent: "center", width: "100%", height: "100%", backgroundColor: "#FFF" }}>
-          <Text style={{ fontSize: 20, fontWeight: "bold" }}>No hay reportes</Text>
-        </View>
+      stickyHeaderIndices={[0]} // Sticky top al header
+      ListEmptyComponent={// Se renderiza un componente si el data esta vacio 
+        <RenderEmpty/>
       }
 
     />
   )
 }
 
+//Componente a renderizar si el data esta vacio
+function RenderEmpty() {
+  return (
+    <View style={styles.renderEmpty}>
+      <Text style={{ fontSize: 20, fontWeight: "bold" }}>No hay reportes</Text>
+    </View>
+  )
+}
+
+//Componente principal del FlatList
 function Reporte(props) {
   const { navigation, reporte, setUpdate } = props;
   const { id, descripcion, aspecto, importancia, estado } = reporte.item;
@@ -357,23 +274,21 @@ function Reporte(props) {
   );
 }
 
+//Componente que renderiza la importacia 
 function Importancia(props) {
   const { importancia } = props;
   switch (importancia.id) {
     case 1:
       return <Text style={styles.normal}>{importancia.nombre}</Text>;
-      break;
     case 2:
       return <Text style={styles.urgente}>{importancia.nombre}</Text>;
-      break;
     case 3:
       return <Text style={styles.emergencia}>{importancia.nombre}</Text>;
-      break;
     default:
-      break;
   }
 }
 
+//Componente que renderiza el estado 
 function Estado(props) {
   const { estado } = props;
   switch (estado.id) {
@@ -387,8 +302,101 @@ function Estado(props) {
       break;
   }
 }
+//Componente a renderizar en el header del FlatList 
+function RenderHeader(props) {
+  const { filtro, error, setFiltro, deshacer, filtrar } = props
+  return (
+    <View>
+      <View style={styles.viewRender}>
+
+        <View style={styles.viewInput}>
+          <Input
+            placeholder="Buscar"
+            defaultValue={filtro}
+            leftIcon={{
+              type: "material-community",
+              name: "magnify",
+              color: "#1A2760",
+            }}
+            leftIconContainerStyle={{ marginLeft: 10 }}
+            inputContainerStyle={{
+              backgroundColor: "white",
+              borderRadius: 10,
+            }}
+            onChangeText={(value) => setFiltro(value.trim())}
+            style={{ color: "black" }}
+            errorMessage={error.filtro}
+          />
+
+        </View>
+
+      </View>
+      <View style={styles.viewButtons}>
+        <View style={styles.viewDeshacer}>
+          <Button
+            title="Limpiar filtrado"
+            icon={
+              <Icon
+                name="delete"
+                type="material-community"
+                color="#fff"
+                size={20}
+              />
+            }
+            buttonStyle={{ backgroundColor: Tema.rojo, marginBottom: 10 }}
+            onPress={deshacer}
+          />
+        </View>
+        <View style={{ flexDirection: "column" }}>
+
+          <Button
+            title="Filtrar"
+            icon={
+              <Icon
+                name="filter"
+                type="material-community"
+                color="#fff"
+                size={20}
+              />
+            }
+            buttonStyle={{ backgroundColor: Tema.verde }}
+            onPress={filtrar}
+          />
+        </View>
+      </View>
+    </View>
+  )
+}
 
 const styles = StyleSheet.create({
+  viewRender: {
+    flexDirection: "row",
+    paddingTop: 20, width: "100%",
+    justifyContent: "center",
+    backgroundColor: "#FFF"
+  },
+  viewInput: {
+    flexDirection: "column",
+    width: "80%"
+  },
+  viewButtons: {
+    flexDirection: "row",
+    width: "100%",
+    backgroundColor: "#FFF",
+    justifyContent: "center",
+    paddingRight: 14
+  },
+  viewDeshacer: {
+    flexDirection: "column",
+    marginRight: 10
+  },
+  renderEmpty: {
+    flexDirection: "row",
+    justifyContent: "center",
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#FFF"
+  },
   card: {
     borderRadius: 6,
     elevation: 3,

@@ -13,9 +13,10 @@ import Loading from '../../utiles/Loading';
 import Tema from '../../utiles/componentes/Temas';
 import * as Notifications from 'expo-notifications';
 import GuardarSesion from '../../peticiones/guardarSesion/GuardarSesion';
+import Alerts from '../../utiles/componentes/Alert';
 
 
-
+//Ejecución en segundo plano, se reciben las notificaciones
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
         shouldShowAlert: true,
@@ -26,6 +27,7 @@ Notifications.setNotificationHandler({
 
 
 export default function InicioSesion(props) {
+    //Constantes globales
     const toastRef = useRef()
     const { setUpdate } = props
     const [updateVista, setUpdateVista] = useState(false)
@@ -37,14 +39,17 @@ export default function InicioSesion(props) {
     const [error, setError] = useState({ correo: "", contrasena: "" });
     const [token, setToken] = useState("")
 
+    //Varible que verifica error de correo 
+    let vCorreo;
 
+    //Método para obtener token de notificaciones de expo
     const getToken = async () => {
 
 
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
         if (existingStatus !== 'granted') {
-            const { status } = await Notifications.requestPermissionsAsync;
+            const { status } = await Notifications.requestPermissionsAsync();
             finalStatus = status;
         }
         if (finalStatus !== 'granted') {
@@ -54,13 +59,20 @@ export default function InicioSesion(props) {
         const token = await Notifications.getExpoPushTokenAsync();
         return token
     }
+
+
+    //Método para llenar el formulario 
     const change = (event, type) => {
         setFormData({ ...formData, [type]: event.nativeEvent.text.trim() });
     };
 
-    const login = async() => {
 
-        if (isEmpty(formData.correo) || isEmpty(formData.contrasena)) {
+    //Método para el login
+    const login = async () => {
+
+        if (isEmpty(formData.correo) || isEmpty(formData.contrasena)) { //Si algun campo se encuentra vacio se hacen las siguientes validaciones
+
+            //Validación del correo 
             if (isEmpty(formData.correo)) {
                 setError((error) => ({ ...error, correo: "Campo Obligatorio" }))
             } else {
@@ -70,53 +82,56 @@ export default function InicioSesion(props) {
                     setError((error) => ({ ...error, correo: "" }))
                 }
             }
+
+            //Validación de la contraseña
             if (isEmpty(formData.contrasena)) {
                 setError((error) => ({ ...error, contrasena: "Campo Obligatorio" }))
             } else {
                 setError((error) => ({ ...error, contrasena: "" }))
             }
-        } else {
+        } else { //Si los campos no estan vacios
             setError({
                 correo: "",
                 contrasena: "",
             });
-            setLoading(true)
-           const response = await InicioSesionPeticion.inicio(formData)
-           if(response){
-            setLoading(false)
-                if (!response.error) {
-                    GuardarSesion.guardarToken(formData.dispositivoMovil)
-                    GuardarSesion.guardar(response.datos)
-                    setUpdate(true)
-                } else {
-                    toastRef.current.show(response.mensajeGeneral, 3000)
+
+            //Validación del correo
+            if (!formData.correo.match("^[\\w-.]+@[\\w-.]+\\.[\\w.]+$")) {
+                setError((error) => ({ ...error, correo: "Formato de correo electrónico inválido" }))
+                vCorreo = true
+            } else {
+                setError((error) => ({ ...error, correo: "" }))
+                vCorreo = false
+            }
+
+
+            if (!vCorreo) {//Si no hay error en el campo correo
+                setLoading(true)
+                const response = await InicioSesionPeticion.inicio(formData)
+                if (response) { //Sin error de conexión
+                    setLoading(false)
+                    if (!response.error) { //Sin error de servidor
+                        GuardarSesion.guardarToken(formData.dispositivoMovil)
+                        GuardarSesion.guardar(response.datos)
+                        setUpdate(true)
+                    } else { //Con error de servidor
+                        toastRef.current.show(response.mensajeGeneral, 3000)
+                    }
+                } else {//Con error de conexión
+                    setLoading(false)
+                    Alerts.alertConexion()
                 }
-           }else{
-            setLoading(false)
-            Alert.alert("Advertencia", `Error de conexión`,
-            [
-                {
-                    text: "Aceptar",
-                    onPress: async() => {
-                      
-                    },
-                },
-            ]);
-             
-           }
-                    
-      
-
-
-
+            }
         }
     };
 
+    //Método para cambiar de vista
     const cambio = (valor) => {
         setOpcion(valor);
         setUpdateVista(true)
     }
 
+    //Método que evalua la renderizacion de la vista 
     const renderizarVista = (vista) => {
         switch (vista) {
             case 2:
@@ -129,6 +144,8 @@ export default function InicioSesion(props) {
                 break;
         }
     }
+
+    //Se verifica que vista se va a renderizar
     useEffect(() => {
         switch (opcion) {
             case "Inicio":
@@ -150,15 +167,12 @@ export default function InicioSesion(props) {
 
     }, [updateVista])
 
+    //Se obtiene el token de notificación de expo
     useEffect(() => {
         getToken().then((token) => {
             setFormData((data) => ({ ...data, dispositivoMovil: token.data }))
         })
     }, [])
-
-
-
-   
 
 
     return (
