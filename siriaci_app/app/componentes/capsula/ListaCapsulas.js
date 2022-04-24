@@ -233,7 +233,7 @@ function Capsula(props) {
             source={
               imagenCapsula
                 ? { uri: `data:image/jpeg;base64, ${imagenCapsula}` }
-                : require("../../../assets/icon.png")
+                : require("../../../assets/errorImagen.png")
             }
           />
         </Card>
